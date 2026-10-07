@@ -28,8 +28,51 @@ let selectedCard = null;
 let selectedDeck = null;
 let serverOffsetMs = 0;
 let connectionState = navigator.onLine ? 'connecting' : 'offline';
+let pendingRequests = 0;
 
 function saveSession(v){ session=v; v?localStorage.setItem(STORE,JSON.stringify(v)):localStorage.removeItem(STORE); }
+function requestStarted(){
+  pendingRequests++;
+  document.body.classList.add('network-busy');
+}
+function requestFinished(){
+  pendingRequests=Math.max(0,pendingRequests-1);
+  if(!pendingRequests) document.body.classList.remove('network-busy');
+}
+function setButtonBusy(btn,on,label='กำลังทำงาน…'){
+  if(!btn)return;
+  if(on){
+    if(btn.dataset.busy==='1')return;
+    btn.dataset.busy='1';
+    btn.dataset.oldHtml=btn.innerHTML;
+    btn.disabled=true;
+    btn.innerHTML='<span class="btn-spinner" aria-hidden="true"></span><span>'+esc(label)+'</span>';
+  }else{
+    if(btn.dataset.busy!=='1')return;
+    btn.disabled=false;
+    btn.innerHTML=btn.dataset.oldHtml||btn.innerHTML;
+    delete btn.dataset.busy;
+    delete btn.dataset.oldHtml;
+  }
+}
+async function withButtonBusy(btn,label,fn){
+  setButtonBusy(btn,true,label);
+  try{return await fn();}
+  finally{setButtonBusy(btn,false);}
+}
+function pulseButton(btn){
+  if(!btn||btn.disabled)return;
+  btn.classList.remove('tap-feedback');
+  void btn.offsetWidth;
+  btn.classList.add('tap-feedback');
+  setTimeout(()=>btn.classList.remove('tap-feedback'),220);
+}
+function selectedDeckData(){ return (state?.decks||[]).find(d=>d.id===selectedDeck)||null; }
+function cardSiteType(card){ return String(card?.card_key||'').split(':')[0]||''; }
+function canRolePlayDeck(role,deck){
+  if(!role||!deck)return false;
+  return role==='CMC'||roleSite(role)===deck.site;
+}
 function adminToken(){ return session?.adminToken||session?.token; }
 function hasAdminControl(){ return !!(state?.me?.is_admin||session?.adminToken); }
 function roleSite(role=''){ return role.endsWith('_HO')?'HO':role.endsWith('_PPD')?'PPD':role.endsWith('_NKL')?'NKL':null; }
@@ -59,7 +102,16 @@ function errText(e){
     .replace('TARGET_ALREADY_HAS_ROLE','ผู้เล่นนี้มี Role อยู่แล้ว')
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
 }
-async function rpc(name,args={}){ const {data,error}=await sb.rpc(name,args); if(error) throw error; return data; }
+async function rpc(name,args={}){
+  requestStarted();
+  try{
+    const {data,error}=await sb.rpc(name,args);
+    if(error)throw error;
+    return data;
+  }finally{
+    requestFinished();
+  }
+}
 function connectionBadge(){
   const map={online:['LIVE','online'],connecting:['CONNECTING','connecting'],degraded:['SYNC','degraded'],offline:['OFFLINE','offline']};
   const [label,cls]=map[connectionState]||map.connecting;
@@ -86,19 +138,31 @@ function landing(){
   $('#tabJoin').onclick=()=>{ $('#joinForm').hidden=false; $('#createForm').hidden=true; $('#tabJoin').classList.add('active'); $('#tabCreate').classList.remove('active'); };
   $('#tabCreate').onclick=()=>{ $('#joinForm').hidden=true; $('#createForm').hidden=false; $('#tabCreate').classList.add('active'); $('#tabJoin').classList.remove('active'); };
   $('#roomCode').oninput=e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  $('#joinBtn').onclick=joinRoom;
-  $('#createBtn').onclick=createRoom;
+  $('#joinBtn').onclick=e=>joinRoom(e.currentTarget);
+  $('#createBtn').onclick=e=>createRoom(e.currentTarget);
   if($('#resumeBtn')) $('#resumeBtn').onclick=()=>refresh(true);
 }
-async function createRoom(){
-  const name=$('#adminName').value.trim(), title=$('#roomTitle').value.trim();
-  if(!name) return toast('กรอกชื่อ Admin','error');
-  try{ const d=await rpc('bcp_web_create_room',{p_title:title,p_display_name:name}); saveSession({roomId:d.room.id,token:d.session_token}); await refresh(true); }catch(e){toast(errText(e),'error');}
+async function createRoom(btn){
+  const name=$('#adminName').value.trim(),title=$('#roomTitle').value.trim();
+  if(!name)return toast('กรอกชื่อ Admin','error');
+  return withButtonBusy(btn,'กำลังสร้างห้อง…',async()=>{
+    try{
+      const d=await rpc('bcp_web_create_room',{p_title:title,p_display_name:name});
+      saveSession({roomId:d.room.id,token:d.session_token});
+      await refresh(true);
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function joinRoom(){
-  const name=$('#playerName').value.trim(), code=$('#roomCode').value.trim();
-  if(!name||code.length!==6) return toast('กรอกชื่อและ Room Code 6 ตัว','error');
-  try{ const d=await rpc('bcp_web_join_room',{p_code:code,p_display_name:name}); saveSession({roomId:d.room.id,token:d.session_token}); await refresh(true); }catch(e){toast(errText(e),'error');}
+async function joinRoom(btn){
+  const name=$('#playerName').value.trim(),code=$('#roomCode').value.trim();
+  if(!name||code.length!==6)return toast('กรอกชื่อและ Room Code 6 ตัว','error');
+  return withButtonBusy(btn,'กำลังเข้าห้อง…',async()=>{
+    try{
+      const d=await rpc('bcp_web_join_room',{p_code:code,p_display_name:name});
+      saveSession({roomId:d.room.id,token:d.session_token});
+      await refresh(true);
+    }catch(e){toast(errText(e),'error');}
+  });
 }
 
 async function refresh(first=false){
@@ -107,6 +171,10 @@ async function refresh(first=false){
   try{
     state=await rpc('bcp_web_get_state',{p_room_id:session.roomId,p_session_token:session.token});
     if(state?.server_now) serverOffsetMs=new Date(state.server_now).getTime()-Date.now();
+    if(selectedDeck && !(state.decks||[]).some(d=>d.id===selectedDeck)){
+      selectedDeck=null;
+      selectedCard=null;
+    }
     setConnectionState('online');
     render();
     if(first) startRealtime();
@@ -432,6 +500,11 @@ function stopRealtime(clearClock=true){
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
   if(clearClock&&clockTimer){clearInterval(clockTimer);clockTimer=null;}
 }
+
+document.addEventListener('pointerdown',e=>{
+  const btn=e.target.closest('button');
+  if(btn)pulseButton(btn);
+});
 
 window.addEventListener('online',()=>{setConnectionState('connecting');if(session){heartbeat();refresh();}});
 window.addEventListener('offline',()=>setConnectionState('offline'));
