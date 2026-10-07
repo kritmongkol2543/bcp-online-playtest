@@ -44,3 +44,11 @@ button,input,select{font:inherit}button{cursor:pointer}.shell{min-height:100vh}.
 .action-card.paused{cursor:not-allowed;opacity:.72}
 .icon-btn:disabled,.btn:disabled{cursor:not-allowed;opacity:.45;transform:none}
 @media(max-width:650px){.pause-banner{align-items:flex-start;flex-direction:column}}
+
+.connection-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-family:"Bricolage Grotesque";font-size:9px;font-weight:800;letter-spacing:.08em;background:#08192b;color:var(--muted)}
+.connection-badge i{width:7px;height:7px;border-radius:50%;background:#6d8094}
+.connection-badge.online{color:#aef1d5;border-color:#275f51}.connection-badge.online i{background:var(--green);box-shadow:0 0 8px rgba(53,201,151,.5)}
+.connection-badge.connecting,.connection-badge.degraded{color:#ffe0a0;border-color:#745c2f}.connection-badge.connecting i,.connection-badge.degraded i{background:var(--amber)}
+.connection-badge.offline{color:#ffb5ba;border-color:#74313a}.connection-badge.offline i{background:var(--red)}
+:focus-visible{outline:3px solid rgba(102,167,255,.75);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
