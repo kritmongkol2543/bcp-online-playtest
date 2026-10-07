@@ -46,6 +46,10 @@ function errText(e){
     .replace('GAME_NOT_PLAYING','เกมยังไม่ได้เริ่ม')
     .replace('GAME_ALREADY_STARTED','เกมเริ่มแล้ว ห้องปิดรับผู้เล่นใหม่')
     .replace('ROOM_CLOSED','ห้องนี้ปิดแล้ว')
+    .replace('DISPLAY_NAME_TAKEN','ชื่อนี้มีผู้ใช้อยู่ในห้องแล้ว กรุณาใช้ชื่ออื่น')
+    .replace('ROOM_MEMBER_LIMIT','ห้องนี้มีผู้เข้าร่วมถึงจำนวนสูงสุดแล้ว')
+    .replace('ROOM_CREATION_RATE_LIMIT','มีการสร้างห้องจำนวนมากเกินไป กรุณาลองใหม่ภายหลัง')
+    .replace('ACTIVE_ROOM_LIMIT','ระบบมีห้องที่กำลังใช้งานถึงขีดจำกัดชั่วคราว')
     .replace('ROOM_NOT_FOUND','ไม่พบห้องเกม')
     .replace('LAST_ACTIVE_PARTICIPANT_CONFIRM_CLOSE','คุณเป็นคนสุดท้าย หากออก ห้องจะถูกปิดถาวร')
     .replace('ROLE_HOLDER_STILL_ONLINE','เจ้าของ Role เดิมยัง Online อยู่')
@@ -103,6 +107,7 @@ function closedRoom(){
   const reason={
     last_participant_left:'ผู้เล่นคนสุดท้ายออกจากห้อง',
     admin_closed:'Admin ปิดห้อง',
+    solo_test_closed:'ปิดห้องทดสอบ Solo',
     lobby_inactive:'Lobby ไม่มีการใช้งานเกิน 30 นาที',
     playing_abandoned:'ไม่มีผู้เล่น Online เกิน 60 นาที'
   }[state.room.close_reason]||'Session ถูกปิด';
