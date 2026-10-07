@@ -311,20 +311,40 @@ function statsHtml(){
   return '<div class="stats"><div><small>ROUND</small><b>'+state.room.current_round+'/4</b></div><div><small>TIME</small><b id="clock">--:--</b></div><div><small>CASH</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+state.room.business_continuity+'</b></div><div><small>READY</small><b>'+ready+'/7</b></div></div>';
 }
 function decksHtml(){
-  const decks=state.decks||[], placements=state.placements||[];
+  const decks=state.decks||[],placements=state.placements||[];
   const paused=!!state.room.paused_at;
-  const bySite={HO:[],PPD:[],NKL:[]}; decks.forEach(d=>bySite[d.site].push(d));
-  return '<section class="panel decision"><div class="panel-head"><div><span class="eyebrow">SHARED DECISION TIMELINE</span><h2>CHP Decks</h2><p>ทีมไม่รู้ล่วงหน้าว่ารอบนี้ต้องใช้กี่ Deck หรือกี่ Card</p></div></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>'<div class="site-col"><div class="site-head"><b>'+site+'</b>'+(roleSite(state.me.role_key)===site?'<button class="btn small" data-add-deck="'+site+'" '+(paused?'disabled':'')+'>+ Deck</button>':'')+'</div><div class="deck-list">'+(bySite[site].length?bySite[site].sort((a,b)=>a.deck_order-b.deck_order).map(d=>{
+  const bySite={HO:[],PPD:[],NKL:[]};
+  decks.forEach(d=>bySite[d.site].push(d));
+
+  return '<section class="panel decision"><div class="panel-head"><div><span class="eyebrow">STEP 1 · CHOOSE CHP</span><h2>CHP Decision Decks</h2><p>เลือก CHP Deck ก่อน แล้วระบบจะแสดงเฉพาะ Action Cards ที่เกี่ยวข้องกับ CHP + Site นั้น</p></div></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>'<div class="site-col"><div class="site-head"><b>'+site+'</b>'+(roleSite(state.me.role_key)===site?'<button class="btn small" data-add-deck="'+site+'" '+(paused?'disabled':'')+'>+ เพิ่ม CHP</button>':'')+'</div><div class="deck-list">'+(bySite[site].length?bySite[site].sort((a,b)=>a.deck_order-b.deck_order).map(d=>{
     const cards=placements.filter(p=>p.deck_id===d.id).sort((a,b)=>a.position-b.position);
-    return '<div class="deck '+(selectedDeck===d.id?'selected':'')+'" data-deck="'+d.id+'"><div class="deck-head"><div><b>'+esc(d.chp_code)+'</b><span>Level '+d.selected_level+'</span></div>'+(roleSite(state.me.role_key)===site?'<button class="icon-btn" data-remove-deck="'+d.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div><div class="dropzone" data-drop="'+d.id+'">'+(cards.length?cards.map((p,i)=>'<div class="placed-card" draggable="true" data-place="'+p.id+'" data-deck="'+d.id+'"><span class="seq">'+(i+1)+'</span><div><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+d.id+'">↑</button><button class="icon-btn" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+d.id+'">↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join(''):'<div class="empty">ลากหรือเลือก Action Card มาวางที่นี่</div>')+'</div></div>';
+    const selected=selectedDeck===d.id;
+    return '<div class="deck '+(selected?'selected':'')+'" data-deck="'+d.id+'" tabindex="0" role="button" aria-pressed="'+selected+'"><div class="deck-head"><div><div class="deck-title-row"><b>'+esc(d.chp_code)+'</b>'+(selected?'<span class="selected-chip">SELECTED</span>':'')+'</div><span>'+site+' · Level '+d.selected_level+'</span></div>'+(roleSite(state.me.role_key)===site?'<button class="icon-btn" title="ลบ CHP Deck" data-remove-deck="'+d.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div><div class="dropzone '+(selected?'active-target':'')+'" data-drop="'+d.id+'">'+(cards.length?cards.map((p,i)=>'<div class="placed-card" draggable="'+(!paused)+'" data-place="'+p.id+'" data-deck="'+d.id+'"><span class="seq">'+(i+1)+'</span><div><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+d.id+'" '+(paused?'disabled':'')+'>↑</button><button class="icon-btn" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+d.id+'" '+(paused?'disabled':'')+'>↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join(''):'<div class="empty">'+(selected?'พร้อมรับ Action Card — ลากมาวางตรงนี้':'กด Deck นี้ก่อนเพื่อเลือก')+'</div>')+'</div></div>';
   }).join(''):'<div class="empty site-empty">ยังไม่มี CHP Deck</div>')+'</div></div>').join('')+'</div></section>';
 }
 function handHtml(){
   const hand=state.hand||[];
   const paused=!!state.room.paused_at;
+  const deck=selectedDeckData();
+  const role=state.me.role_key;
+
+  if(!role){
+    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">ADMIN CONSOLE</span><h2>Action Cards ถูกซ่อน</h2><p>Admin Console ใช้ควบคุม Session ไม่ใช่ Game Role — สลับ TEST VIEW ไป CMC / CMD / CMT เพื่อเล่นการ์ด</p></div></div><div class="hand-empty-state"><span>ADMIN</span><b>เลือก Game Role เพื่อทดสอบการเล่น</b></div></section>';
+  }
+
+  if(!deck){
+    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">STEP 2 · ACTION CARDS</span><h2>'+esc(ROLE_LABEL[role]||'My Cards')+'</h2><p>Action Cards จะยังไม่เปิดจนกว่าจะเลือก CHP Deck ด้านบนก่อน</p></div></div><div class="hand-empty-state"><span>01</span><b>กดเลือก CHP Deck ที่ต้องการตอบสนอง</b><small>จากนั้นจะแสดงเฉพาะการ์ดของ CHP + Site นั้น</small></div></section>';
+  }
+
+  if(!canRolePlayDeck(role,deck)){
+    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">STEP 2 · ACTION CARDS</span><h2>'+esc(deck.chp_code)+' · '+esc(deck.site)+'</h2><p>คุณดู Decision Timeline ของ Site นี้ได้ แต่ Role ปัจจุบันวาง Action ลง Site นี้ไม่ได้</p></div></div><div class="hand-empty-state"><span>LOCK</span><b>สลับไป Role ของ '+esc(deck.site)+' หรือ CMC</b></div></section>';
+  }
+
+  const expectedSiteType=deck.site==='HO'?'HO':'Factory';
+  const cards=hand.filter(c=>c.chp_code===deck.chp_code&&cardSiteType(c)===expectedSiteType);
   const used=new Set((state.placements||[]).map(p=>p.card_key));
-  const grouped={}; hand.forEach(c=>(grouped[c.chp_code]??=[]).push(c));
-  return '<section class="panel hand"><div class="panel-head"><div><span class="eyebrow">PRIVATE ACTION HAND</span><h2>'+esc(ROLE_LABEL[state.me.role_key]||'My Cards')+'</h2><p>ผู้เล่นอื่นจะไม่เห็นการ์ดจนกว่าจะถูกวางลง Decision Timeline</p></div></div><div class="hand-grid">'+Object.entries(grouped).map(([chp,cards])=>'<div class="hand-group"><div class="hand-group-title">'+esc(chp)+'</div>'+cards.map(c=>'<article class="action-card '+(used.has(c.card_key)?'used':'')+(paused?' paused':'')+(selectedCard===c.card_key?' selected':'')+'" draggable="'+(!used.has(c.card_key)&&!paused)+'" data-card="'+esc(c.card_key)+'"><div class="card-top"><span>'+esc(c.chp_code)+'</span><strong>฿'+money(c.cash_cost)+'</strong></div><h3>'+esc(c.title)+'</h3><p>'+esc(c.detail).replace(/\n/g,'<br>')+'</p><footer>'+esc(c.role)+'</footer></article>').join('')+'</div>').join('')+'</div></section>';
+
+  return '<section class="panel hand cards-reveal"><div class="panel-head"><div><span class="eyebrow">STEP 2 · CHOOSE ACTION</span><h2>'+esc(deck.chp_code)+' · '+esc(deck.site)+' · Level '+deck.selected_level+'</h2><p>'+esc(ROLE_LABEL[role])+' · ลากลง Deck หรือคลิกขวาเพื่อวางทันที · Mobile ใช้ปุ่ม “วาง”</p></div><button id="clearDeckSelection" class="btn small ghost">เปลี่ยน CHP</button></div>'+(cards.length?'<div class="hand-grid">'+cards.map(c=>'<article class="action-card '+(used.has(c.card_key)?'used':'')+(paused?' paused':'')+(selectedCard===c.card_key?' selected':'')+'" draggable="'+(!used.has(c.card_key)&&!paused)+'" data-card="'+esc(c.card_key)+'"><div class="card-top"><span>'+esc(c.chp_code)+'</span><strong>฿'+money(c.cash_cost)+'</strong></div><h3>'+esc(c.title)+'</h3><p>'+esc(c.detail).replace(/\n/g,'<br>')+'</p><footer><span>'+esc(c.role)+'</span>'+(!used.has(c.card_key)?'<button class="card-place-btn" data-place-card="'+esc(c.card_key)+'" '+(paused?'disabled':'')+'>วาง</button>':'<span class="used-label">USED</span>')+'</footer></article>').join('')+'</div>':'<div class="hand-empty-state"><span>0</span><b>Role นี้ไม่มี Action Card สำหรับ '+esc(deck.chp_code)+'</b><small>ไม่ใช่ทุก Role ต้องมี Action ในทุก CHP</small></div>')+'</section>';
 }
 function teamHtml(){
   const members=state.members.filter(m=>m.role_key);
