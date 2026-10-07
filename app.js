@@ -204,17 +204,19 @@ function statsHtml(){
 }
 function decksHtml(){
   const decks=state.decks||[], placements=state.placements||[];
+  const paused=!!state.room.paused_at;
   const bySite={HO:[],PPD:[],NKL:[]}; decks.forEach(d=>bySite[d.site].push(d));
-  return '<section class="panel decision"><div class="panel-head"><div><span class="eyebrow">SHARED DECISION TIMELINE</span><h2>CHP Decks</h2><p>ทีมไม่รู้ล่วงหน้าว่ารอบนี้ต้องใช้กี่ Deck หรือกี่ Card</p></div></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>'<div class="site-col"><div class="site-head"><b>'+site+'</b>'+(roleSite(state.me.role_key)===site?'<button class="btn small" data-add-deck="'+site+'">+ Deck</button>':'')+'</div><div class="deck-list">'+(bySite[site].length?bySite[site].sort((a,b)=>a.deck_order-b.deck_order).map(d=>{
+  return '<section class="panel decision"><div class="panel-head"><div><span class="eyebrow">SHARED DECISION TIMELINE</span><h2>CHP Decks</h2><p>ทีมไม่รู้ล่วงหน้าว่ารอบนี้ต้องใช้กี่ Deck หรือกี่ Card</p></div></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>'<div class="site-col"><div class="site-head"><b>'+site+'</b>'+(roleSite(state.me.role_key)===site?'<button class="btn small" data-add-deck="'+site+'" '+(paused?'disabled':'')+'>+ Deck</button>':'')+'</div><div class="deck-list">'+(bySite[site].length?bySite[site].sort((a,b)=>a.deck_order-b.deck_order).map(d=>{
     const cards=placements.filter(p=>p.deck_id===d.id).sort((a,b)=>a.position-b.position);
-    return '<div class="deck '+(selectedDeck===d.id?'selected':'')+'" data-deck="'+d.id+'"><div class="deck-head"><div><b>'+esc(d.chp_code)+'</b><span>Level '+d.selected_level+'</span></div>'+(roleSite(state.me.role_key)===site?'<button class="icon-btn" data-remove-deck="'+d.id+'">×</button>':'')+'</div><div class="dropzone" data-drop="'+d.id+'">'+(cards.length?cards.map((p,i)=>'<div class="placed-card" draggable="true" data-place="'+p.id+'" data-deck="'+d.id+'"><span class="seq">'+(i+1)+'</span><div><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+d.id+'">↑</button><button class="icon-btn" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+d.id+'">↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" title="นำออก" data-remove-action="'+p.id+'">×</button>':'')+'</div></div>').join(''):'<div class="empty">ลากหรือเลือก Action Card มาวางที่นี่</div>')+'</div></div>';
+    return '<div class="deck '+(selectedDeck===d.id?'selected':'')+'" data-deck="'+d.id+'"><div class="deck-head"><div><b>'+esc(d.chp_code)+'</b><span>Level '+d.selected_level+'</span></div>'+(roleSite(state.me.role_key)===site?'<button class="icon-btn" data-remove-deck="'+d.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div><div class="dropzone" data-drop="'+d.id+'">'+(cards.length?cards.map((p,i)=>'<div class="placed-card" draggable="true" data-place="'+p.id+'" data-deck="'+d.id+'"><span class="seq">'+(i+1)+'</span><div><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+d.id+'">↑</button><button class="icon-btn" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+d.id+'">↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join(''):'<div class="empty">ลากหรือเลือก Action Card มาวางที่นี่</div>')+'</div></div>';
   }).join(''):'<div class="empty site-empty">ยังไม่มี CHP Deck</div>')+'</div></div>').join('')+'</div></section>';
 }
 function handHtml(){
   const hand=state.hand||[];
+  const paused=!!state.room.paused_at;
   const used=new Set((state.placements||[]).map(p=>p.card_key));
   const grouped={}; hand.forEach(c=>(grouped[c.chp_code]??=[]).push(c));
-  return '<section class="panel hand"><div class="panel-head"><div><span class="eyebrow">PRIVATE ACTION HAND</span><h2>'+esc(ROLE_LABEL[state.me.role_key]||'My Cards')+'</h2><p>ผู้เล่นอื่นจะไม่เห็นการ์ดจนกว่าจะถูกวางลง Decision Timeline</p></div></div><div class="hand-grid">'+Object.entries(grouped).map(([chp,cards])=>'<div class="hand-group"><div class="hand-group-title">'+esc(chp)+'</div>'+cards.map(c=>'<article class="action-card '+(used.has(c.card_key)?'used':'')+(selectedCard===c.card_key?' selected':'')+'" draggable="'+(!used.has(c.card_key))+'" data-card="'+esc(c.card_key)+'"><div class="card-top"><span>'+esc(c.chp_code)+'</span><strong>฿'+money(c.cash_cost)+'</strong></div><h3>'+esc(c.title)+'</h3><p>'+esc(c.detail).replace(/\n/g,'<br>')+'</p><footer>'+esc(c.role)+'</footer></article>').join('')+'</div>').join('')+'</div></section>';
+  return '<section class="panel hand"><div class="panel-head"><div><span class="eyebrow">PRIVATE ACTION HAND</span><h2>'+esc(ROLE_LABEL[state.me.role_key]||'My Cards')+'</h2><p>ผู้เล่นอื่นจะไม่เห็นการ์ดจนกว่าจะถูกวางลง Decision Timeline</p></div></div><div class="hand-grid">'+Object.entries(grouped).map(([chp,cards])=>'<div class="hand-group"><div class="hand-group-title">'+esc(chp)+'</div>'+cards.map(c=>'<article class="action-card '+(used.has(c.card_key)?'used':'')+(paused?' paused':'')+(selectedCard===c.card_key?' selected':'')+'" draggable="'+(!used.has(c.card_key)&&!paused)+'" data-card="'+esc(c.card_key)+'"><div class="card-top"><span>'+esc(c.chp_code)+'</span><strong>฿'+money(c.cash_cost)+'</strong></div><h3>'+esc(c.title)+'</h3><p>'+esc(c.detail).replace(/\n/g,'<br>')+'</p><footer>'+esc(c.role)+'</footer></article>').join('')+'</div>').join('')+'</div></section>';
 }
 function teamHtml(){
   const members=state.members.filter(m=>m.role_key);
@@ -232,7 +234,7 @@ function teamHtml(){
 }
 function game(){
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(ROLE_LABEL[state.me.role_key]||'Waiting Role')+'</span><button id="leaveBtn" class="btn small ghost">ออก</button>';
-  shell('<main class="page">'+statsHtml()+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
+  shell('<main class="page">'+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
   $('#leaveBtn').onclick=leave;
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   $('#readyBtn').onclick=toggleReady;
@@ -248,7 +250,7 @@ function game(){
   $('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation(); movePlacement(b.dataset.deck,b.dataset.place,+b.dataset.move);});
   $('[data-deck]').forEach(d=>d.onclick=()=>{selectedDeck=d.dataset.deck; if(selectedCard) placeSelected();});
   $$('[data-card]').forEach(c=>{
-    c.onclick=()=>{ if(c.classList.contains('used')) return; selectedCard=c.dataset.card; toast('เลือก Action แล้ว — เลือก CHP Deck ที่ต้องการวาง'); };
+    c.onclick=()=>{ if(state.room.paused_at||c.classList.contains('used')) return; selectedCard=c.dataset.card; toast('เลือก Action แล้ว — เลือก CHP Deck ที่ต้องการวาง'); };
     c.ondragstart=e=>{ selectedCard=c.dataset.card; e.dataTransfer.setData('text/plain',selectedCard); };
   });
   $('.placed-card').forEach(c=>{
@@ -355,7 +357,7 @@ function showLatestResult(){
 }
 
 async function debrief(){
-  clearInterval(clockTimer);
+  stopRealtime();
   shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><p>กำลังโหลดผลสรุปและ Answer Key…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
   $('#leaveBtn').onclick=leave;
   try{
