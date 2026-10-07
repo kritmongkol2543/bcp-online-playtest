@@ -50,3 +50,8 @@ Publish the repository root from the `main` branch. No build step is required.
 The BCP browser cannot directly read the Emily Brain tables through this app. The BCP tables have RLS enabled and direct table privileges revoked. Game mutations/state reads are handled by `bcp_web_*` RPCs, while Realtime exposes only a non-sensitive invalidation signal.
 
 Because this shares the same Supabase project, the project-wide publishable key still identifies the same Supabase project. Other pre-existing RPCs that were deliberately granted to the `anon` role remain technically reachable by any holder of that publishable key. Sensitive Emily runtime RPCs should remain non-anon; this is an accepted Free-plan trade-off until BCP moves to a separate project.
+
+
+## Production readiness
+
+Room lifecycle, retention, presence, Admin failover, bot regressions, security boundaries, and the pre-workshop QA gate are documented in [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
