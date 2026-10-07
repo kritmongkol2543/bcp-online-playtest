@@ -25,7 +25,7 @@ let refreshTimer = null;
 let heartbeatTimer = null;
 let busy = false;
 let selectedCard = null;
-let selectedDeck = null;
+let selectedChp = null;
 let serverOffsetMs = 0;
 let connectionState = navigator.onLine ? 'connecting' : 'offline';
 let pendingRequests = 0;
@@ -67,11 +67,17 @@ function pulseButton(btn){
   btn.classList.add('tap-feedback');
   setTimeout(()=>btn.classList.remove('tap-feedback'),220);
 }
-function selectedDeckData(){ return (state?.decks||[]).find(d=>d.id===selectedDeck)||null; }
 function cardSiteType(card){ return String(card?.card_key||'').split(':')[0]||''; }
-function canRolePlayDeck(role,deck){
-  if(!role||!deck)return false;
-  return role==='CMC'||roleSite(role)===deck.site;
+function cardByKey(key){ return (state?.hand||[]).find(c=>c.card_key===key)||null; }
+function chpSort(a,b){ return Number(String(a).replace(/\D/g,''))-Number(String(b).replace(/\D/g,'')); }
+function ownedChps(){ return [...new Set((state?.hand||[]).map(c=>c.chp_code))].sort(chpSort); }
+function validTargetSites(card,role=state?.me?.role_key){
+  if(!card||!role)return [];
+  if(role!=='CMC'){
+    const site=roleSite(role);
+    return site?[site]:[];
+  }
+  return cardSiteType(card)==='HO'?['HO']:['PPD','NKL'];
 }
 function adminToken(){ return session?.adminToken||session?.token; }
 function hasAdminControl(){ return !!(state?.me?.is_admin||session?.adminToken); }
@@ -172,8 +178,8 @@ async function refresh(first=false){
   try{
     state=await rpc('bcp_web_get_state',{p_room_id:session.roomId,p_session_token:session.token});
     if(state?.server_now) serverOffsetMs=new Date(state.server_now).getTime()-Date.now();
-    if(selectedDeck && !(state.decks||[]).some(d=>d.id===selectedDeck)){
-      selectedDeck=null;
+    if(selectedChp && !(state.hand||[]).some(c=>c.chp_code===selectedChp)){
+      selectedChp=null;
       selectedCard=null;
     }
     setConnectionState('online');
@@ -295,7 +301,7 @@ async function switchSoloRole(role){
   }
   saveSession(session);
   selectedCard=null;
-  selectedDeck=null;
+  selectedChp=null;
   await refresh();
 }
 
@@ -390,7 +396,7 @@ function game(){
   if($('#lateJoinBtn')) $('#lateJoinBtn').onclick=e=>openLateJoin(e.currentTarget);
   if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=e=>closeRoomNow(e.currentTarget);
   if($('#recoverRoleBtn')) $('#recoverRoleBtn').onclick=e=>recoverRole(e.currentTarget);
-  if($('#clearDeckSelection')) $('#clearDeckSelection').onclick=()=>{selectedDeck=null;selectedCard=null;game();};
+  if($('#clearDeckSelection')) $('#clearDeckSelection').onclick=()=>{selectedChp=null;selectedCard=null;game();};
 
   $$('[data-add-deck]').forEach(b=>b.onclick=e=>addDeck(b.dataset.addDeck,e.currentTarget));
   $$('[data-remove-deck]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeDeck(b.dataset.removeDeck,e.currentTarget);});
@@ -531,7 +537,7 @@ async function removeDeck(id,btn){
   return withButtonBusy(btn,'…',async()=>{
     try{
       await rpc('bcp_web_remove_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:id});
-      if(selectedDeck===id){selectedDeck=null;selectedCard=null;}
+      if(selectedDeck===id){selectedChp=null;selectedCard=null;}
       await refresh();
     }catch(e){toast(errText(e),'error');}
   });
