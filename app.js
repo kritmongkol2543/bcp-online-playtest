@@ -36,6 +36,8 @@ function errText(e){
   return (e?.message||String(e||'Error'))
     .replace('ALL_7_ROLES_REQUIRED','ต้องกำหนด Role ให้ครบ 7 Role ก่อนเริ่ม')
     .replace('ALL_7_PLAYERS_MUST_BE_READY','ต้อง Ready ครบทั้ง 7 Role')
+    .replace('ALL_7_ROLES_MUST_BE_ONLINE','Role ครบแล้ว แต่ยังมีผู้เล่น Offline — ให้กลับเข้าเกมหรือเปลี่ยนผู้เล่นก่อนเริ่ม')
+    .replace('ADMIN_STILL_ONLINE','Admin เดิมยัง Online อยู่ จึงยังรับสิทธิ์แทนไม่ได้')
     .replace('INSUFFICIENT_CASH','Cash ไม่เพียงพอ')
     .replace('CARD_ALREADY_USED','การ์ดใบนี้ถูกใช้ใน Site นี้แล้ว')
     .replace('ADMIN_REQUIRED','เฉพาะ Admin เท่านั้น')
@@ -137,10 +139,12 @@ function lobby(){
   }).join('');
   const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'Waiting')+(m.is_admin?' · Admin':'')+(m.is_bot?' · BOT':'')+'</small></div><span class="presence-label">'+(m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
   const soloActive=!!session.soloSessions?.length;
-  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
+  const offlineAdmin=members.find(m=>m.is_admin&&!m.is_bot&&!m.online);
+  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':offlineAdmin?'<button id="claimAdminBtn" class="btn small">รับสิทธิ์ Admin</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
   shell('<main class="page"><div class="lobby-grid"><section class="panel"><span class="eyebrow">ROOM CODE</span><div class="room-code">'+esc(state.room.code)+'</div><h2>'+esc(state.room.title)+'</h2><p class="muted">ส่ง Code นี้ให้ทีม แล้ว Admin กำหนด Role ตามผู้ที่ Online อยู่</p>'+(state.me.is_admin?'<div class="solo-test-box"><div><b>Solo Test Mode</b><small>จำลองครบ 7 Role บนอุปกรณ์เดียว โดยยังคงกติกาเกมจริง</small></div><button id="soloBtn" class="btn '+(soloActive?'ghost':'primary')+'">'+(soloActive?'ปิด Solo Test':'เปิด Solo Test')+'</button></div>':'')+'<div class="member-list">'+memberList+'</div></section><section class="panel"><div class="panel-head"><div><h2>Role Assignment</h2><p>ต้องครบ 7 Role ก่อนเริ่มเกม</p></div><span class="badge">'+assigned.size+'/7</span></div><div class="role-grid">'+roleCards+'</div>'+(state.me.is_admin?'<div class="setup-grid"><label>Scenario Set<select id="scenarioSet" class="select"><option value="1">Scenario Set 1</option><option value="2">Scenario Set 2</option></select></label><label>Starting Cash<input id="startingCash" class="input" type="number" value="11000000" step="1000"></label><label>เวลา / Round (นาที)<input id="roundMinutes" class="input" type="number" min="1" max="60" value="15"></label><label>Twist เมื่อเหลือ (นาที)<input id="twistMinutes" class="input" type="number" min="0" max="59" value="6"></label></div><button id="startBtn" class="btn primary full" '+(assigned.size===7?'':'disabled')+'>เริ่ม Simulation</button>':'<div class="waiting-box">รอ Admin กำหนด Role และเริ่มเกม</div>')+'</section></div></main>',extra);
   $('#leaveBtn').onclick=leave;
   if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=closeRoomNow;
+  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=claimAdmin;
   if($('#soloBtn')) $('#soloBtn').onclick=toggleSoloTest;
   $$('.role-select').forEach(el=>el.onchange=async()=>{
     try{ await rpc('bcp_web_assign_role',{p_room_id:state.room.id,p_session_token:session.token,p_member_id:el.value||members.find(x=>x.role_key===el.dataset.role)?.id,p_role_key:el.value?el.dataset.role:null}); await refresh(); }catch(e){toast(errText(e),'error');}
@@ -216,13 +220,14 @@ function teamHtml(){
   const members=state.members.filter(m=>m.role_key);
   const waiting=state.members.filter(m=>!m.role_key&&!m.is_bot);
   const admin=hasAdminControl();
+  const offlineAdmin=state.members.find(m=>m.is_admin&&!m.is_bot&&!m.online);
   const adminPanel=admin?'<div class="admin-panel"><b>Admin Control</b><div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
     '<button id="extendBtn" class="btn small">+1 min</button>'+
     '<button id="lateJoinBtn" class="btn small">เปิด Join 5 นาที</button>'+
     '<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button></div>'+
     (waiting.length?'<div class="recovery-box"><small>Role Recovery</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">รับช่วง Role</button></div>':'')+
-    '</div>':'';
+    '</div>':offlineAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
   return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||'')+'</p></div></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · BOT':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div><button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full">'+(state.me.ready_to_lock?'✓ Ready แล้ว · กดเพื่อยกเลิก':'Ready to Lock')+'</button><p class="muted small-text">ตำแหน่งจะ Lock เมื่อครบทั้ง 7 Role หรือหมดเวลา</p>'+adminPanel+'</aside>';
 }
 function game(){
@@ -231,6 +236,7 @@ function game(){
   $('#leaveBtn').onclick=leave;
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   $('#readyBtn').onclick=toggleReady;
+  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=claimAdmin;
   if($('#pauseBtn')) $('#pauseBtn').onclick=togglePause;
   if($('#extendBtn')) $('#extendBtn').onclick=extendRound;
   if($('#lateJoinBtn')) $('#lateJoinBtn').onclick=openLateJoin;
@@ -298,6 +304,13 @@ async function reorderPlacement(deckId,fromId,targetId){
   if(from<0||to<0||from===to)return;
   const [item]=cards.splice(from,1); cards.splice(to,0,item);
   try{await rpc('bcp_web_reorder_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_placement_ids:cards.map(x=>x.id)});await refresh();}catch(e){toast(errText(e),'error');}
+}
+async function claimAdmin(){
+  try{
+    await rpc('bcp_web_claim_admin',{p_room_id:state.room.id,p_session_token:session.token});
+    toast('รับสิทธิ์ Admin แล้ว','success');
+    await refresh();
+  }catch(e){toast(errText(e),'error');}
 }
 async function closeRoomNow(){
   if(!confirm('ปิดห้องถาวร? หลังปิดจะไม่มีใคร Join กลับด้วย Room Code นี้ได้'))return;
