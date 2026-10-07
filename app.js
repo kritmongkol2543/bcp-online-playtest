@@ -103,13 +103,14 @@ function errText(e){
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
 }
 async function rpc(name,args={}){
-  requestStarted();
+  const showActivity=name!=='bcp_web_heartbeat';
+  if(showActivity)requestStarted();
   try{
     const {data,error}=await sb.rpc(name,args);
     if(error)throw error;
     return data;
   }finally{
-    requestFinished();
+    if(showActivity)requestFinished();
   }
 }
 function connectionBadge(){
@@ -483,11 +484,11 @@ function addDeck(site,triggerBtn){
   pulseButton(triggerBtn);
   const overlay=document.createElement('div');
   overlay.className='modal-backdrop';
-  let selectedChp='CHP-4';
+  let selectedChp=null;
   let selectedLevel=1;
   const chps=Array.from({length:14},(_,i)=>'CHP-'+(i+1));
 
-  overlay.innerHTML='<div class="modal-card" role="dialog" aria-modal="true" aria-label="เพิ่ม CHP Deck"><div class="modal-head"><div><span class="eyebrow">STEP 1 · '+esc(site)+'</span><h2>เลือก CHP ก่อน</h2><p>สร้าง Deck แล้วกด Deck นั้นเพื่อเปิด Action Cards</p></div><button class="icon-btn" data-modal-close>×</button></div><div class="picker-label">CHP</div><div class="chp-picker">'+chps.map(chp=>'<button class="chp-chip '+(chp===selectedChp?'active':'')+'" data-chp="'+chp+'">'+chp+'</button>').join('')+'</div><div class="picker-label">ระดับที่ทีมประเมิน</div><div class="level-picker">'+[1,2,3].map(n=>'<button class="level-chip '+(n===selectedLevel?'active':'')+'" data-level="'+n+'">Level '+n+'</button>').join('')+'</div><div class="modal-actions"><button class="btn ghost" data-modal-cancel>ยกเลิก</button><button class="btn primary" data-modal-confirm>สร้าง '+selectedChp+' Deck</button></div></div>';
+  overlay.innerHTML='<div class="modal-card" role="dialog" aria-modal="true" aria-label="เพิ่ม CHP Deck"><div class="modal-head"><div><span class="eyebrow">STEP 1 · '+esc(site)+'</span><h2>เลือก CHP ก่อน</h2><p>เลือก CHP ที่ทีมประเมินว่าเกี่ยวข้อง แล้วจึงสร้าง Deck เพื่อเปิด Action Cards</p></div><button class="icon-btn" data-modal-close>×</button></div><div class="picker-label">CHP · ต้องเลือกก่อน</div><div class="chp-picker">'+chps.map(chp=>'<button class="chp-chip" data-chp="'+chp+'">'+chp+'</button>').join('')+'</div><div class="picker-label">ระดับที่ทีมประเมิน</div><div class="level-picker">'+[1,2,3].map(n=>'<button class="level-chip '+(n===selectedLevel?'active':'')+'" data-level="'+n+'">Level '+n+'</button>').join('')+'</div><div class="modal-actions"><button class="btn ghost" data-modal-cancel>ยกเลิก</button><button class="btn primary" data-modal-confirm disabled>เลือก CHP ก่อน</button></div></div>';
 
   document.body.appendChild(overlay);
   const close=()=>overlay.remove();
@@ -498,13 +499,18 @@ function addDeck(site,triggerBtn){
   $$('[data-chp]',overlay).forEach(b=>b.onclick=()=>{
     selectedChp=b.dataset.chp;
     $$('[data-chp]',overlay).forEach(x=>x.classList.toggle('active',x===b));
-    $('[data-modal-confirm]',overlay).textContent='สร้าง '+selectedChp+' Deck';
+    const confirmBtn=$('[data-modal-confirm]',overlay);
+    confirmBtn.disabled=false;
+    confirmBtn.textContent='สร้าง '+selectedChp+' Deck';
   });
   $$('[data-level]',overlay).forEach(b=>b.onclick=()=>{
     selectedLevel=+b.dataset.level;
     $$('[data-level]',overlay).forEach(x=>x.classList.toggle('active',x===b));
   });
-  $('[data-modal-confirm]',overlay).onclick=e=>commitDeck(site,selectedChp,selectedLevel,e.currentTarget,close);
+  $('[data-modal-confirm]',overlay).onclick=e=>{
+    if(!selectedChp)return;
+    commitDeck(site,selectedChp,selectedLevel,e.currentTarget,close);
+  };
 }
 
 async function commitDeck(site,chp,level,btn,close){
