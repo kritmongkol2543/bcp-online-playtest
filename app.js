@@ -273,16 +273,16 @@ function game(){
   if($('#lateJoinBtn')) $('#lateJoinBtn').onclick=openLateJoin;
   if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=closeRoomNow;
   if($('#recoverRoleBtn')) $('#recoverRoleBtn').onclick=recoverRole;
-  $('[data-add-deck]').forEach(b=>b.onclick=()=>addDeck(b.dataset.addDeck));
+  $$('[data-add-deck]').forEach(b=>b.onclick=()=>addDeck(b.dataset.addDeck));
   $$('[data-remove-deck]').forEach(b=>b.onclick=e=>{e.stopPropagation(); removeDeck(b.dataset.removeDeck);});
-  $('[data-remove-action]').forEach(b=>b.onclick=e=>{e.stopPropagation(); removeAction(b.dataset.removeAction);});
-  $('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation(); movePlacement(b.dataset.deck,b.dataset.place,+b.dataset.move);});
-  $('[data-deck]').forEach(d=>d.onclick=()=>{selectedDeck=d.dataset.deck; if(selectedCard) placeSelected();});
+  $$('[data-remove-action]').forEach(b=>b.onclick=e=>{e.stopPropagation(); removeAction(b.dataset.removeAction);});
+  $$('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation(); movePlacement(b.dataset.deck,b.dataset.place,+b.dataset.move);});
+  $$('[data-deck]').forEach(d=>d.onclick=()=>{selectedDeck=d.dataset.deck; if(selectedCard) placeSelected();});
   $$('[data-card]').forEach(c=>{
     c.onclick=()=>{ if(state.room.paused_at||c.classList.contains('used')) return; selectedCard=c.dataset.card; toast('เลือก Action แล้ว — เลือก CHP Deck ที่ต้องการวาง'); };
     c.ondragstart=e=>{ selectedCard=c.dataset.card; e.dataTransfer.setData('text/plain',selectedCard); };
   });
-  $('.placed-card').forEach(c=>{
+  $$('.placed-card').forEach(c=>{
     c.ondragstart=e=>{
       e.stopPropagation();
       e.dataTransfer.setData('application/x-bcp-placement',JSON.stringify({id:c.dataset.place,deck:c.dataset.deck}));
@@ -298,7 +298,7 @@ function game(){
       }
     };
   });
-  $('[data-drop]').forEach(z=>{
+  $$('[data-drop]').forEach(z=>{
     z.ondragover=e=>{e.preventDefault();z.classList.add('dragover');};
     z.ondragleave=()=>z.classList.remove('dragover');
     z.ondrop=e=>{
