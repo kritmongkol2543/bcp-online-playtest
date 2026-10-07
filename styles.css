@@ -310,3 +310,172 @@ body.network-busy::before{
   .modal-actions .btn{width:100%}
   .card-place-btn{padding:7px 10px}
 }
+
+
+/* Private role-owned CHP decks + shared site timeline */
+.private-decks{overflow:hidden}
+.private-deck-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:9px;
+  padding:0 14px 14px;
+}
+.private-deck-card{
+  border:1px solid #315b85;
+  border-radius:12px;
+  min-height:78px;
+  padding:12px;
+  text-align:left;
+  background:linear-gradient(180deg,#0f2a47,#091c31);
+  color:#d9ebff;
+  cursor:pointer;
+  transition:.16s ease;
+}
+.private-deck-card:hover{
+  transform:translateY(-2px);
+  border-color:#6aa7e8;
+  box-shadow:0 8px 22px rgba(20,88,158,.18);
+}
+.private-deck-card b{
+  display:block;
+  font-family:"Bricolage Grotesque";
+  font-size:17px;
+}
+.private-deck-card span{
+  display:block;
+  margin-top:5px;
+  color:#8fb4d7;
+  font-size:10px;
+  font-weight:700;
+}
+.hand-empty-state.compact{min-height:78px;margin-top:0}
+.private-card-section+.private-card-section{margin-top:14px}
+.private-card-section-title{
+  margin:0 0 8px;
+  padding:0 2px;
+  font-family:"Bricolage Grotesque";
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  color:#85b9f5;
+}
+.card-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+}
+.card-placement-note{
+  color:#59718b;
+  font-size:9px;
+  white-space:nowrap;
+}
+
+.timeline-site{min-height:170px}
+.site-drop-hint{
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.11em;
+  color:#6887a7;
+}
+.site-dropzone{
+  min-height:128px;
+  padding:8px;
+  border:1px dashed rgba(87,132,178,.28);
+  border-radius:11px;
+  transition:.15s ease;
+}
+.site-dropzone.dragover{
+  border-color:#69a8ea;
+  background:rgba(47,124,246,.10);
+  box-shadow:0 0 0 2px rgba(72,144,219,.14) inset;
+}
+.site-dropzone.is-working{
+  pointer-events:none;
+  opacity:.74;
+  position:relative;
+}
+.site-dropzone.is-working::after{
+  content:"กำลังวาง Action…";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  z-index:5;
+  border-radius:10px;
+  background:rgba(5,17,31,.74);
+  color:#dceeff;
+  font-size:11px;
+  font-weight:800;
+  backdrop-filter:blur(2px);
+}
+.site-dropzone.just-updated{animation:site-success .65s ease-out}
+@keyframes site-success{
+  0%{box-shadow:0 0 0 0 rgba(53,201,151,.55)}
+  100%{box-shadow:0 0 0 10px rgba(53,201,151,0)}
+}
+.timeline-chp{
+  border:1px solid #294f76;
+  border-radius:11px;
+  background:#091b2e;
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.timeline-chp:last-child{margin-bottom:0}
+.timeline-chp-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:7px 9px;
+  background:#102b48;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.timeline-chp-head b{
+  font-family:"Bricolage Grotesque";
+  font-size:12px;
+}
+.timeline-chp-head span{
+  color:#799dbf;
+  font-size:9px;
+  font-weight:800;
+}
+.timeline-cards{padding:7px}
+.site-choice-menu{
+  position:fixed;
+  z-index:400;
+  min-width:138px;
+  padding:8px;
+  border:1px solid #3f6d9c;
+  border-radius:11px;
+  background:#0a1c30;
+  box-shadow:0 18px 44px rgba(0,0,0,.42);
+}
+.site-choice-menu small{
+  display:block;
+  padding:3px 6px 7px;
+  color:#789bbd;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.site-choice-menu button{
+  width:100%;
+  border:1px solid transparent;
+  border-radius:8px;
+  padding:8px 9px;
+  text-align:left;
+  background:transparent;
+  color:#dceeff;
+  font-weight:800;
+}
+.site-choice-menu button:hover{
+  background:#153a61;
+  border-color:#2d689f;
+}
+
+@media(max-width:650px){
+  .private-deck-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 10px 12px}
+  .site-dropzone{min-height:100px}
+  .card-actions{flex-wrap:wrap}
+}
