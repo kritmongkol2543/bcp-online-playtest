@@ -202,24 +202,30 @@ function closedRoom(){
   shell('<main class="page"><section class="panel closed-panel"><span class="eyebrow">SESSION CLOSED</span><h1>ห้องนี้ถูกปิดแล้ว</h1><p>'+esc(reason)+'</p><p class="muted">Room Code นี้จะไม่เปิดให้ Join อีก และข้อมูล Session จะถูกเก็บตามรอบ retention ก่อนย้ายเป็นสรุป Archive</p><button id="clearClosedBtn" class="btn primary">กลับหน้าแรก</button></section></main>');
   $('#clearClosedBtn').onclick=()=>{saveSession(null);landing();};
 }
-async function leave(){
+async function leave(btn){
   if(!session||!state) return landing();
   if(session.soloSessions?.length){
-    if(!confirm('ออกจาก Solo Test? ห้องทดสอบนี้จะถูกปิดถาวร')) return;
-    try{ await rpc('bcp_web_close_room',{p_room_id:state.room.id,p_session_token:adminToken(),p_reason:'solo_test_closed'}); }catch{}
-    saveSession(null); return landing();
+    if(!confirm('ออกจาก Solo Test? ห้องทดสอบนี้จะถูกปิดถาวร'))return;
+    return withButtonBusy(btn,'กำลังออก…',async()=>{
+      try{await rpc('bcp_web_close_room',{p_room_id:state.room.id,p_session_token:adminToken(),p_reason:'solo_test_closed'});}catch{}
+      saveSession(null);
+      landing();
+    });
   }
-  if(!confirm(state.room.status==='completed'?'ออกจากผลสรุป Session นี้?':'ออกจากห้องเกม?')) return;
-  try{
-    await rpc('bcp_web_leave_room',{p_room_id:state.room.id,p_session_token:session.token,p_confirm_close:false});
-  }catch(e){
-    if((e?.message||'').includes('LAST_ACTIVE_PARTICIPANT_CONFIRM_CLOSE')){
-      if(!confirm('คุณเป็นผู้เล่นคนสุดท้าย หากออกตอนนี้ ห้องจะถูกปิดถาวรและ Join กลับด้วย Room Code เดิมไม่ได้\n\nยืนยันออกและปิดห้อง?')) return;
-      try{ await rpc('bcp_web_leave_room',{p_room_id:state.room.id,p_session_token:session.token,p_confirm_close:true}); }
-      catch(e2){ return toast(errText(e2),'error'); }
-    } else return toast(errText(e),'error');
-  }
-  saveSession(null); landing();
+  if(!confirm(state.room.status==='completed'?'ออกจากผลสรุป Session นี้?':'ออกจากห้องเกม?'))return;
+  return withButtonBusy(btn,'กำลังออก…',async()=>{
+    try{
+      await rpc('bcp_web_leave_room',{p_room_id:state.room.id,p_session_token:session.token,p_confirm_close:false});
+    }catch(e){
+      if((e?.message||'').includes('LAST_ACTIVE_PARTICIPANT_CONFIRM_CLOSE')){
+        if(!confirm('คุณเป็นผู้เล่นคนสุดท้าย หากออกตอนนี้ ห้องจะถูกปิดถาวรและ Join กลับด้วย Room Code เดิมไม่ได้\n\nยืนยันออกและปิดห้อง?'))return;
+        try{await rpc('bcp_web_leave_room',{p_room_id:state.room.id,p_session_token:session.token,p_confirm_close:true});}
+        catch(e2){return toast(errText(e2),'error');}
+      }else return toast(errText(e),'error');
+    }
+    saveSession(null);
+    landing();
+  });
 }
 
 function lobby(){
@@ -237,12 +243,18 @@ function lobby(){
   const canClaimAdmin=!state.me.is_admin&&(!currentAdmin||offlineAdmin);
   const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':canClaimAdmin?'<button id="claimAdminBtn" class="btn small">รับสิทธิ์ Admin</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
   shell('<main class="page"><div class="lobby-grid"><section class="panel"><span class="eyebrow">ROOM CODE</span><div class="room-code">'+esc(state.room.code)+'</div><h2>'+esc(state.room.title)+'</h2><p class="muted">ส่ง Code นี้ให้ทีม แล้ว Admin กำหนด Role ตามผู้ที่ Online อยู่</p>'+(state.me.is_admin?'<div class="admin-role-note"><b>Admin = สิทธิ์ควบคุมห้อง ไม่ใช่ Game Role</b><span>Admin เล่นด้วยได้ — ถ้าเล่นจริงให้ Assign ชื่อตัวเองเข้า 1 ใน 7 Role หรือเปิด Solo Test เพื่อสลับเล่นทุก Role บนอุปกรณ์เดียว</span></div><div class="solo-test-box"><div><b>Solo Test · Admin + 7 Test Players</b><small>หลังเริ่มเกมจะสลับได้ระหว่าง Admin Console และ CMC / CMD / CMT ทุก Role โดยไม่ต้องเปิด 7 เครื่อง</small></div><button id="soloBtn" class="btn '+(soloActive?'ghost':'primary')+'">'+(soloActive?'ปิด Solo Test':'เปิด Solo Test')+'</button></div>':'')+'<div class="member-list">'+memberList+'</div></section><section class="panel"><div class="panel-head"><div><h2>Role Assignment</h2><p>ต้องครบ 7 Role ก่อนเริ่มเกม · Admin จะถือ Role ด้วยก็ได้</p></div><span class="badge">'+assigned.size+'/7</span></div><div class="role-grid">'+roleCards+'</div>'+(state.me.is_admin?'<div class="setup-grid"><label>Scenario Set<select id="scenarioSet" class="select"><option value="1">Scenario Set 1</option><option value="2">Scenario Set 2</option></select></label><label>Starting Cash<input id="startingCash" class="input" type="number" value="11000000" step="1000"></label><label>เวลา / Round (นาที)<input id="roundMinutes" class="input" type="number" min="1" max="60" value="15"></label><label>Twist เมื่อเหลือ (นาที)<input id="twistMinutes" class="input" type="number" min="0" max="59" value="6"></label></div><button id="startBtn" class="btn primary full" '+(assigned.size===7?'':'disabled')+'>เริ่ม Simulation</button>':'<div class="waiting-box">รอ Admin กำหนด Role และเริ่มเกม</div>')+'</section></div></main>',extra);
-  $('#leaveBtn').onclick=leave;
-  if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=closeRoomNow;
-  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=claimAdmin;
+  $('#leaveBtn').onclick=e=>leave(e.currentTarget);
+  if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=e=>closeRoomNow(e.currentTarget);
+  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
   if($('#soloBtn')) $('#soloBtn').onclick=e=>toggleSoloTest(e.currentTarget);
   $$('.role-select').forEach(el=>el.onchange=async()=>{
-    try{ await rpc('bcp_web_assign_role',{p_room_id:state.room.id,p_session_token:session.token,p_member_id:el.value||members.find(x=>x.role_key===el.dataset.role)?.id,p_role_key:el.value?el.dataset.role:null}); await refresh(); }catch(e){toast(errText(e),'error');}
+    el.disabled=true;
+    el.classList.add('control-loading');
+    try{
+      await rpc('bcp_web_assign_role',{p_room_id:state.room.id,p_session_token:session.token,p_member_id:el.value||members.find(x=>x.role_key===el.dataset.role)?.id,p_role_key:el.value?el.dataset.role:null});
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+    finally{el.disabled=false;el.classList.remove('control-loading');}
   });
   if($('#startBtn')) $('#startBtn').onclick=e=>startGame(e.currentTarget);
 }
@@ -575,32 +587,72 @@ async function reorderPlacement(deckId,fromId,targetId){
   }catch(e){toast(errText(e),'error');}
 }
 
-async function claimAdmin(){
-  try{
-    await rpc('bcp_web_claim_admin',{p_room_id:state.room.id,p_session_token:session.token});
-    toast('รับสิทธิ์ Admin แล้ว','success');
-    await refresh();
-  }catch(e){toast(errText(e),'error');}
+async function claimAdmin(btn){
+  return withButtonBusy(btn,'กำลังรับสิทธิ์…',async()=>{
+    try{
+      await rpc('bcp_web_claim_admin',{p_room_id:state.room.id,p_session_token:session.token});
+      toast('รับสิทธิ์ Admin แล้ว','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function closeRoomNow(){
+async function closeRoomNow(btn){
   if(!confirm('ปิดห้องถาวร? หลังปิดจะไม่มีใคร Join กลับด้วย Room Code นี้ได้'))return;
-  try{await rpc('bcp_web_close_room',{p_room_id:state.room.id,p_session_token:adminToken(),p_reason:'admin_closed'});await refresh();}catch(e){toast(errText(e),'error');}
+  return withButtonBusy(btn,'กำลังปิด…',async()=>{
+    try{await rpc('bcp_web_close_room',{p_room_id:state.room.id,p_session_token:adminToken(),p_reason:'admin_closed'});await refresh();}
+    catch(e){toast(errText(e),'error');}
+  });
 }
-async function togglePause(){
-  try{await rpc(state.room.paused_at?'bcp_web_resume_game':'bcp_web_pause_game',{p_room_id:state.room.id,p_session_token:adminToken()});await refresh();}catch(e){toast(errText(e),'error');}
+async function togglePause(btn){
+  return withButtonBusy(btn,state.room.paused_at?'กำลัง Resume…':'กำลัง Pause…',async()=>{
+    try{await rpc(state.room.paused_at?'bcp_web_resume_game':'bcp_web_pause_game',{p_room_id:state.room.id,p_session_token:adminToken()});await refresh();}
+    catch(e){toast(errText(e),'error');}
+  });
 }
-async function extendRound(){
-  try{await rpc('bcp_web_extend_round',{p_room_id:state.room.id,p_session_token:adminToken(),p_seconds:60});toast('เพิ่มเวลา 1 นาที','success');await refresh();}catch(e){toast(errText(e),'error');}
+async function extendRound(btn){
+  return withButtonBusy(btn,'กำลังเพิ่มเวลา…',async()=>{
+    try{
+      await rpc('bcp_web_extend_round',{p_room_id:state.room.id,p_session_token:adminToken(),p_seconds:60});
+      toast('เพิ่มเวลา 1 นาที','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function openLateJoin(){
-  try{const d=await rpc('bcp_web_open_late_join',{p_room_id:state.room.id,p_session_token:adminToken(),p_minutes:5});toast('เปิดรับผู้เล่นทดแทน 5 นาที','success');await refresh();}catch(e){toast(errText(e),'error');}
+async function openLateJoin(btn){
+  return withButtonBusy(btn,'กำลังเปิด Join…',async()=>{
+    try{
+      await rpc('bcp_web_open_late_join',{p_room_id:state.room.id,p_session_token:adminToken(),p_minutes:5});
+      toast('เปิดรับผู้เล่นทดแทน 5 นาที','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function recoverRole(){
-  const member=$('#recoveryMember')?.value, role=$('#recoveryRole')?.value;
+async function recoverRole(btn){
+  const member=$('#recoveryMember')?.value,role=$('#recoveryRole')?.value;
   if(!member||!role)return;
-  try{await rpc('bcp_web_reassign_role',{p_room_id:state.room.id,p_session_token:adminToken(),p_member_id:member,p_role_key:role});toast('ส่งต่อ Role แล้ว','success');await refresh();}catch(e){toast(errText(e),'error');}
+  return withButtonBusy(btn,'กำลังส่งต่อ…',async()=>{
+    try{
+      await rpc('bcp_web_reassign_role',{p_room_id:state.room.id,p_session_token:adminToken(),p_member_id:member,p_role_key:role});
+      toast('ส่งต่อ Role แล้ว','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function toggleReady(){ try{await rpc('bcp_web_set_ready',{p_room_id:state.room.id,p_session_token:session.token,p_ready:!state.me.ready_to_lock});await refresh();const players=state.members.filter(m=>m.role_key);if(players.length===7&&players.every(m=>m.ready_to_lock)){try{await rpc('bcp_web_lock_round',{p_room_id:state.room.id,p_session_token:session.token});await refresh();}catch{}}}catch(e){toast(errText(e),'error');} }
+async function toggleReady(btn){
+  return withButtonBusy(btn,state.me.ready_to_lock?'กำลังยกเลิก…':'กำลัง Ready…',async()=>{
+    try{
+      await rpc('bcp_web_set_ready',{p_room_id:state.room.id,p_session_token:session.token,p_ready:!state.me.ready_to_lock});
+      await refresh();
+      const players=state.members.filter(m=>m.role_key);
+      if(players.length===7&&players.every(m=>m.ready_to_lock)){
+        try{
+          await rpc('bcp_web_lock_round',{p_room_id:state.room.id,p_session_token:session.token});
+          await refresh();
+        }catch{}
+      }
+    }catch(e){toast(errText(e),'error');}
+  });
+}
 
 function startClock(){
   clearInterval(clockTimer);
@@ -627,14 +679,14 @@ function showLatestResult(){
 async function debrief(){
   stopRealtime();
   shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><p>กำลังโหลดผลสรุปและ Answer Key…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
-  $('#leaveBtn').onclick=leave;
+  $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   try{
     const d=await rpc('bcp_web_get_debrief',{p_room_id:state.room.id,p_session_token:session.token});
     const rounds=d.rounds.map(r=>'<div class="result-card"><small>ROUND '+r.round_no+'</small><b>BC '+r.summary.bc_after+'</b><span>−'+r.summary.bc_loss+' BC · Cash ฿'+money(r.summary.cash_used_round)+'</span><p>'+esc(r.summary.outcome)+'</p></div>').join('');
     const grouped={}; d.answer_key.forEach(a=>{const k='R'+a.round_no+' · '+a.site+' · '+a.chp_code+' · L'+a.level;(grouped[k]??=[]).push(a);});
     const answer=Object.entries(grouped).map(([k,rows])=>'<div class="answer-group"><div class="answer-head">'+esc(k)+'</div>'+rows.map(x=>'<div class="answer-row"><span>#'+x.seq+'</span><span>'+esc(x.role)+'</span><b>'+esc(x.title)+'</b><span>฿'+money(x.cash_cost)+'</span></div>').join('')+'</div>').join('');
     shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><div class="debrief-summary"><div><small>FINAL BC</small><b>'+d.room.business_continuity+'</b></div><div><small>CASH REMAINING</small><b>฿'+money(d.room.cash_remaining)+'</b></div></div><div class="result-grid">'+rounds+'</div></section><section class="panel"><div class="panel-head"><div><h2>Answer Key</h2><p>เปิดหลังจบ Round 4 เท่านั้น</p></div></div>'+answer+'</section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
-    $('#leaveBtn').onclick=leave;
+    $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   }catch(e){toast(errText(e),'error');}
 }
 
