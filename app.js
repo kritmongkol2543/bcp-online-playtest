@@ -367,78 +367,214 @@ function game(){
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">ออก</button>';
   shell('<main class="page">'+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
-  $('#leaveBtn').onclick=leave;
+
+  $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   if($('#readyBtn')) $('#readyBtn').onclick=e=>toggleReady(e.currentTarget);
-  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=claimAdmin;
-  if($('#pauseBtn')) $('#pauseBtn').onclick=togglePause;
-  if($('#extendBtn')) $('#extendBtn').onclick=extendRound;
-  if($('#lateJoinBtn')) $('#lateJoinBtn').onclick=openLateJoin;
-  if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=closeRoomNow;
-  if($('#recoverRoleBtn')) $('#recoverRoleBtn').onclick=recoverRole;
-  $$('[data-add-deck]').forEach(b=>b.onclick=()=>addDeck(b.dataset.addDeck));
-  $$('[data-remove-deck]').forEach(b=>b.onclick=e=>{e.stopPropagation(); removeDeck(b.dataset.removeDeck);});
-  $$('[data-remove-action]').forEach(b=>b.onclick=e=>{e.stopPropagation(); removeAction(b.dataset.removeAction);});
-  $$('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation(); movePlacement(b.dataset.deck,b.dataset.place,+b.dataset.move);});
-  $$('[data-deck]').forEach(d=>d.onclick=()=>{selectedDeck=d.dataset.deck; if(selectedCard) placeSelected();});
-  $$('[data-card]').forEach(c=>{
-    c.onclick=()=>{ if(state.room.paused_at||c.classList.contains('used')) return; selectedCard=c.dataset.card; toast('เลือก Action แล้ว — เลือก CHP Deck ที่ต้องการวาง'); };
-    c.ondragstart=e=>{ selectedCard=c.dataset.card; e.dataTransfer.setData('text/plain',selectedCard); };
+  if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
+  if($('#pauseBtn')) $('#pauseBtn').onclick=e=>togglePause(e.currentTarget);
+  if($('#extendBtn')) $('#extendBtn').onclick=e=>extendRound(e.currentTarget);
+  if($('#lateJoinBtn')) $('#lateJoinBtn').onclick=e=>openLateJoin(e.currentTarget);
+  if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=e=>closeRoomNow(e.currentTarget);
+  if($('#recoverRoleBtn')) $('#recoverRoleBtn').onclick=e=>recoverRole(e.currentTarget);
+  if($('#clearDeckSelection')) $('#clearDeckSelection').onclick=()=>{selectedDeck=null;selectedCard=null;game();};
+
+  $$('[data-add-deck]').forEach(b=>b.onclick=e=>addDeck(b.dataset.addDeck,e.currentTarget));
+  $$('[data-remove-deck]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeDeck(b.dataset.removeDeck,e.currentTarget);});
+  $$('[data-remove-action]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeAction(b.dataset.removeAction,e.currentTarget);});
+  $$('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation();movePlacement(b.dataset.deck,b.dataset.place,+b.dataset.move,e.currentTarget);});
+
+  $$('[data-deck]').forEach(d=>{
+    const choose=()=>{
+      selectedDeck=d.dataset.deck;
+      selectedCard=null;
+      game();
+      requestAnimationFrame(()=>document.querySelector('.hand')?.scrollIntoView({behavior:'smooth',block:'nearest'}));
+    };
+    d.onclick=e=>{if(e.target.closest('button'))return;choose();};
+    d.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};
   });
+
+  $$('[data-card]').forEach(c=>{
+    c.onclick=e=>{
+      if(e.target.closest('button')||state.room.paused_at||c.classList.contains('used'))return;
+      selectedCard=c.dataset.card;
+      $$('.action-card').forEach(x=>x.classList.toggle('selected',x===c));
+    };
+    c.oncontextmenu=e=>{
+      e.preventDefault();
+      if(state.room.paused_at||c.classList.contains('used'))return;
+      placeCard(c.dataset.card,selectedDeck,null);
+    };
+    c.ondragstart=e=>{
+      if(!selectedDeck||state.room.paused_at||c.classList.contains('used')){e.preventDefault();return;}
+      selectedCard=c.dataset.card;
+      e.dataTransfer.effectAllowed='copy';
+      e.dataTransfer.setData('application/x-bcp-card',c.dataset.card);
+    };
+  });
+
+  $$('[data-place-card]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    placeCard(b.dataset.placeCard,selectedDeck,e.currentTarget);
+  });
+
   $$('.placed-card').forEach(c=>{
     c.ondragstart=e=>{
       e.stopPropagation();
+      e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('application/x-bcp-placement',JSON.stringify({id:c.dataset.place,deck:c.dataset.deck}));
     };
     c.ondragover=e=>e.preventDefault();
     c.ondrop=e=>{
-      e.preventDefault();e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       const raw=e.dataTransfer.getData('application/x-bcp-placement');
       if(raw){
-        try{const from=JSON.parse(raw); if(from.deck===c.dataset.deck) reorderPlacement(from.deck,from.id,c.dataset.place);}catch{}
-      }else{
-        selectedDeck=c.dataset.deck; placeSelected();
+        try{
+          const from=JSON.parse(raw);
+          if(from.deck===c.dataset.deck)reorderPlacement(from.deck,from.id,c.dataset.place);
+        }catch{}
       }
     };
   });
+
   $$('[data-drop]').forEach(z=>{
-    z.ondragover=e=>{e.preventDefault();z.classList.add('dragover');};
+    z.ondragover=e=>{
+      const types=[...e.dataTransfer.types];
+      const card=types.includes('application/x-bcp-card');
+      const placement=types.includes('application/x-bcp-placement');
+      if(card&&z.dataset.drop!==selectedDeck)return;
+      if(!card&&!placement)return;
+      e.preventDefault();
+      z.classList.add('dragover');
+    };
     z.ondragleave=()=>z.classList.remove('dragover');
     z.ondrop=e=>{
-      e.preventDefault();z.classList.remove('dragover');
-      const raw=e.dataTransfer.getData('application/x-bcp-placement');
-      if(raw) return;
-      selectedDeck=z.dataset.drop;placeSelected();
+      e.preventDefault();
+      z.classList.remove('dragover');
+      const placement=e.dataTransfer.getData('application/x-bcp-placement');
+      if(placement)return;
+      const card=e.dataTransfer.getData('application/x-bcp-card')||selectedCard;
+      if(z.dataset.drop!==selectedDeck){
+        toast('เลือก CHP Deck นี้ก่อน จึงจะวาง Action ได้','error');
+        return;
+      }
+      if(card)placeCard(card,z.dataset.drop,null);
     };
   });
+
   startClock();
   showLatestResult();
 }
-async function addDeck(site){
-  const chp=prompt('CHP Code เช่น CHP-4','CHP-4'); if(!chp) return;
-  const level=+prompt('ระดับที่ทีมประเมิน (1–3)','1'); if(![1,2,3].includes(level)) return toast('Level ต้องเป็น 1–3','error');
-  try{ await rpc('bcp_web_add_deck',{p_room_id:state.room.id,p_session_token:session.token,p_site:site,p_chp_code:chp.toUpperCase(),p_level:level}); await refresh(); }catch(e){toast(errText(e),'error');}
+function addDeck(site,triggerBtn){
+  pulseButton(triggerBtn);
+  const overlay=document.createElement('div');
+  overlay.className='modal-backdrop';
+  let selectedChp='CHP-4';
+  let selectedLevel=1;
+  const chps=Array.from({length:14},(_,i)=>'CHP-'+(i+1));
+
+  overlay.innerHTML='<div class="modal-card" role="dialog" aria-modal="true" aria-label="เพิ่ม CHP Deck"><div class="modal-head"><div><span class="eyebrow">STEP 1 · '+esc(site)+'</span><h2>เลือก CHP ก่อน</h2><p>สร้าง Deck แล้วกด Deck นั้นเพื่อเปิด Action Cards</p></div><button class="icon-btn" data-modal-close>×</button></div><div class="picker-label">CHP</div><div class="chp-picker">'+chps.map(chp=>'<button class="chp-chip '+(chp===selectedChp?'active':'')+'" data-chp="'+chp+'">'+chp+'</button>').join('')+'</div><div class="picker-label">ระดับที่ทีมประเมิน</div><div class="level-picker">'+[1,2,3].map(n=>'<button class="level-chip '+(n===selectedLevel?'active':'')+'" data-level="'+n+'">Level '+n+'</button>').join('')+'</div><div class="modal-actions"><button class="btn ghost" data-modal-cancel>ยกเลิก</button><button class="btn primary" data-modal-confirm>สร้าง '+selectedChp+' Deck</button></div></div>';
+
+  document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  overlay.onclick=e=>{if(e.target===overlay)close();};
+  $('[data-modal-close]',overlay).onclick=close;
+  $('[data-modal-cancel]',overlay).onclick=close;
+
+  $$('[data-chp]',overlay).forEach(b=>b.onclick=()=>{
+    selectedChp=b.dataset.chp;
+    $$('[data-chp]',overlay).forEach(x=>x.classList.toggle('active',x===b));
+    $('[data-modal-confirm]',overlay).textContent='สร้าง '+selectedChp+' Deck';
+  });
+  $$('[data-level]',overlay).forEach(b=>b.onclick=()=>{
+    selectedLevel=+b.dataset.level;
+    $$('[data-level]',overlay).forEach(x=>x.classList.toggle('active',x===b));
+  });
+  $('[data-modal-confirm]',overlay).onclick=e=>commitDeck(site,selectedChp,selectedLevel,e.currentTarget,close);
 }
-async function removeDeck(id){ if(!confirm('ลบ Deck นี้?'))return; try{await rpc('bcp_web_remove_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:id});await refresh();}catch(e){toast(errText(e),'error');} }
-async function placeSelected(){
-  if(!selectedCard||!selectedDeck) return;
-  try{ await rpc('bcp_web_play_action',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:selectedDeck,p_card_key:selectedCard}); selectedCard=null; selectedDeck=null; await refresh(); }catch(e){toast(errText(e),'error');}
+
+async function commitDeck(site,chp,level,btn,close){
+  return withButtonBusy(btn,'กำลังสร้าง Deck…',async()=>{
+    try{
+      const d=await rpc('bcp_web_add_deck',{p_room_id:state.room.id,p_session_token:session.token,p_site:site,p_chp_code:chp,p_level:level});
+      selectedDeck=d.id;
+      selectedCard=null;
+      close();
+      toast(chp+' ถูกเพิ่มแล้ว — เลือก Action Card ต่อได้เลย','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
-async function removeAction(id){ try{await rpc('bcp_web_remove_action',{p_room_id:state.room.id,p_session_token:session.token,p_placement_id:id});await refresh();}catch(e){toast(errText(e),'error');} }
-async function movePlacement(deckId,placementId,delta){
+
+async function removeDeck(id,btn){
+  if(!confirm('ลบ CHP Deck นี้?'))return;
+  return withButtonBusy(btn,'…',async()=>{
+    try{
+      await rpc('bcp_web_remove_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:id});
+      if(selectedDeck===id){selectedDeck=null;selectedCard=null;}
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+
+async function placeCard(cardKey,deckId,btn){
+  if(!cardKey||!deckId)return toast('เลือก CHP Deck ก่อน','error');
+  const deckEl=document.querySelector('[data-deck="'+CSS.escape(deckId)+'"]');
+  deckEl?.classList.add('is-working');
+
+  return withButtonBusy(btn,'กำลังวาง…',async()=>{
+    try{
+      await rpc('bcp_web_play_action',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_card_key:cardKey});
+      selectedCard=null;
+      await refresh();
+      requestAnimationFrame(()=>{
+        const el=document.querySelector('[data-deck="'+CSS.escape(deckId)+'"]');
+        el?.classList.add('just-updated');
+        setTimeout(()=>el?.classList.remove('just-updated'),650);
+      });
+    }catch(e){toast(errText(e),'error');}
+    finally{deckEl?.classList.remove('is-working');}
+  });
+}
+
+async function removeAction(id,btn){
+  return withButtonBusy(btn,'…',async()=>{
+    try{
+      await rpc('bcp_web_remove_action',{p_room_id:state.room.id,p_session_token:session.token,p_placement_id:id});
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+
+async function movePlacement(deckId,placementId,delta,btn){
   const cards=(state.placements||[]).filter(p=>p.deck_id===deckId).sort((a,b)=>a.position-b.position);
-  const i=cards.findIndex(p=>p.id===placementId), j=i+delta;
+  const i=cards.findIndex(p=>p.id===placementId),j=i+delta;
   if(i<0||j<0||j>=cards.length)return;
   [cards[i],cards[j]]=[cards[j],cards[i]];
-  try{await rpc('bcp_web_reorder_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_placement_ids:cards.map(x=>x.id)});await refresh();}catch(e){toast(errText(e),'error');}
+
+  return withButtonBusy(btn,'…',async()=>{
+    try{
+      await rpc('bcp_web_reorder_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_placement_ids:cards.map(x=>x.id)});
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
 }
+
 async function reorderPlacement(deckId,fromId,targetId){
   const cards=(state.placements||[]).filter(p=>p.deck_id===deckId).sort((a,b)=>a.position-b.position);
-  const from=cards.findIndex(p=>p.id===fromId), to=cards.findIndex(p=>p.id===targetId);
+  const from=cards.findIndex(p=>p.id===fromId),to=cards.findIndex(p=>p.id===targetId);
   if(from<0||to<0||from===to)return;
-  const [item]=cards.splice(from,1); cards.splice(to,0,item);
-  try{await rpc('bcp_web_reorder_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_placement_ids:cards.map(x=>x.id)});await refresh();}catch(e){toast(errText(e),'error');}
+  const [item]=cards.splice(from,1);
+  cards.splice(to,0,item);
+
+  try{
+    await rpc('bcp_web_reorder_deck',{p_room_id:state.room.id,p_session_token:session.token,p_deck_id:deckId,p_placement_ids:cards.map(x=>x.id)});
+    await refresh();
+  }catch(e){toast(errText(e),'error');}
 }
+
 async function claimAdmin(){
   try{
     await rpc('bcp_web_claim_admin',{p_room_id:state.room.id,p_session_token:session.token});
