@@ -26,6 +26,8 @@ let heartbeatTimer = null;
 let busy = false;
 let selectedCard = null;
 let selectedDeck = null;
+let serverOffsetMs = 0;
+let connectionState = navigator.onLine ? 'connecting' : 'offline';
 
 function saveSession(v){ session=v; v?localStorage.setItem(STORE,JSON.stringify(v)):localStorage.removeItem(STORE); }
 function adminToken(){ return session?.adminToken||session?.token; }
@@ -57,9 +59,23 @@ function errText(e){
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
 }
 async function rpc(name,args={}){ const {data,error}=await sb.rpc(name,args); if(error) throw error; return data; }
+function connectionBadge(){
+  const map={online:['LIVE','online'],connecting:['CONNECTING','connecting'],degraded:['SYNC','degraded'],offline:['OFFLINE','offline']};
+  const [label,cls]=map[connectionState]||map.connecting;
+  return '<span id="connectionBadge" class="connection-badge '+cls+'"><i></i>'+label+'</span>';
+}
+function setConnectionState(next){
+  connectionState=next;
+  const el=$('#connectionBadge');
+  if(!el)return;
+  const map={online:['LIVE','online'],connecting:['CONNECTING','connecting'],degraded:['SYNC','degraded'],offline:['OFFLINE','offline']};
+  const [label,cls]=map[next]||map.connecting;
+  el.className='connection-badge '+cls;
+  el.innerHTML='<i></i>'+label;
+}
 
 function topbar(extra=''){
-  return '<header class="topbar"><div class="brand"><div class="brand-mark">BCP</div><div><b>ONLINE PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+extra+'</div></header>';
+  return '<header class="topbar"><div class="brand"><div class="brand-mark">BCP</div><div><b>ONLINE PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+extra+'</div></header>';
 }
 function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
 
@@ -89,9 +105,12 @@ async function refresh(first=false){
   busy=true;
   try{
     state=await rpc('bcp_web_get_state',{p_room_id:session.roomId,p_session_token:session.token});
+    if(state?.server_now) serverOffsetMs=new Date(state.server_now).getTime()-Date.now();
+    setConnectionState('online');
     render();
     if(first) startRealtime();
   }catch(e){
+    setConnectionState(navigator.onLine?'degraded':'offline');
     if(first){ toast('Session ใช้งานไม่ได้: '+errText(e),'error'); saveSession(null); landing(); }
   }finally{ busy=false; }
 }
@@ -348,7 +367,7 @@ function startClock(){
       if(el){el.textContent='PAUSED';el.classList.add('warning');}
       return;
     }
-    const now=Date.now(), end=new Date(state.room.round_ends_at).getTime(), reveal=state.room.twist_reveal_at?new Date(state.room.twist_reveal_at).getTime():null;
+    const now=Date.now()+serverOffsetMs, end=new Date(state.room.round_ends_at).getTime(), reveal=state.room.twist_reveal_at?new Date(state.room.twist_reveal_at).getTime():null;
     const sec=Math.max(0,Math.ceil((end-now)/1000)); if(el){el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');el.classList.toggle('danger',sec<=60);}
     if(!busy&&!state.room.twist_revealed&&reveal&&now>=reveal&&sec>0){ try{busy=true;const r=await rpc('bcp_web_reveal_twist',{p_room_id:state.room.id,p_session_token:session.token});if(r?.revealed){toast('⚠ CRISIS UPDATE — Twist ถูกเปิดแล้ว','error');await refresh();}}catch{}finally{busy=false;} }
     if(!busy&&sec<=0){ try{busy=true;await rpc('bcp_web_expire_round',{p_room_id:state.room.id,p_session_token:session.token});toast('หมดเวลา — ระบบ Lock Round แล้ว','error');await refresh();}catch{}finally{busy=false;} }
@@ -380,8 +399,11 @@ async function heartbeat(){
   const token=adminToken();
   try{
     const h=await rpc('bcp_web_heartbeat',{p_room_id:session.roomId,p_session_token:token});
+    if(h?.server_now) serverOffsetMs=new Date(h.server_now).getTime()-Date.now();
+    setConnectionState('online');
     if(h.room_status==='closed') await refresh();
   }catch(e){
+    setConnectionState(navigator.onLine?'degraded':'offline');
     if((e?.message||'').includes('MEMBER_REQUIRED')&&!session.adminToken){
       toast('Session นี้หมดอายุหรือออกจากห้องแล้ว','error');
     }
@@ -391,7 +413,10 @@ function startRealtime(){
   stopRealtime(false);
   channel=sb.channel('bcp-room-'+session.roomId)
     .on('postgres_changes',{event:'*',schema:'public',table:'bcp_web_live_signals',filter:'room_id=eq.'+session.roomId},()=>setTimeout(()=>refresh(),120))
-    .subscribe();
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED') setConnectionState('online');
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED') setConnectionState(navigator.onLine?'degraded':'offline');
+    });
   refreshTimer=setInterval(()=>refresh(),30000);
   heartbeatTimer=setInterval(heartbeat,15000);
   heartbeat();
@@ -402,6 +427,9 @@ function stopRealtime(clearClock=true){
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
   if(clearClock&&clockTimer){clearInterval(clockTimer);clockTimer=null;}
 }
+
+window.addEventListener('online',()=>{setConnectionState('connecting');if(session){heartbeat();refresh();}});
+window.addEventListener('offline',()=>setConnectionState('offline'));
 
 landing();
 if(session) refresh(true);
