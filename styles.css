@@ -37,3 +37,10 @@ button,input,select{font:inherit}button{cursor:pointer}.shell{min-height:100vh}.
   .placed-card{grid-template-columns:25px minmax(0,1fr)}
   .placed-controls{grid-column:2;justify-content:flex-end}
 }
+
+.pause-banner{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid #8a6a2d;border-radius:12px;background:#2b2313;color:#ffe0a0}
+.pause-banner b{font-family:"Bricolage Grotesque";letter-spacing:.08em}
+.pause-banner span{font-size:12px}
+.action-card.paused{cursor:not-allowed;opacity:.72}
+.icon-btn:disabled,.btn:disabled{cursor:not-allowed;opacity:.45;transform:none}
+@media(max-width:650px){.pause-banner{align-items:flex-start;flex-direction:column}}
