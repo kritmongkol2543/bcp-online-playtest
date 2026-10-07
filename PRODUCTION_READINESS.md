@@ -140,3 +140,19 @@ Before an actual workshop:
 3. Run a two-device check for Realtime placement, Ready, Pause/Resume, and reconnect.
 4. Confirm the current Scenario/Action source data is the intended workshop version.
 5. If game logic/source data changes, rerun bot + lifecycle + operational regression before the event.
+
+
+## Private CHP deck play model
+
+Current play model no longer asks players to select a response Level.
+
+- Each Game Role has its own **private CHP Deck library**.
+- A private CHP Deck contains only Action Cards that the current Role is authorized to own/use.
+- Choosing a CHP Deck is a local/private browsing action only; it does not create a shared response object and does not reveal an answer.
+- The player chooses individual Action Cards and places them directly onto the shared Site timeline.
+- The backend automatically groups placed cards by `Site + CHP` for sequence evaluation.
+- CMC can place HO cards at HO and Factory cards at PPD/NKL; site roles can place only at their own Site.
+- Wrong/extra Action Cards still spend Cash. Missing required Actions and wrong sequence create BC loss under the scoring rules.
+- No explicit Level penalty is asked from the player. Response adequacy is inferred from which Action Cards were actually chosen against the source-required Actions for the scenario's hidden actual Level.
+- Source CHP/Level remains hidden during play and is revealed only in the final Debrief.
+- Source cases that intentionally require zero Action Cards at a Level are handled as zero-loss when no Action is required.
