@@ -50,6 +50,7 @@ function errText(e){
     .replace('ROOM_CLOSED','ห้องนี้ปิดแล้ว')
     .replace('DISPLAY_NAME_TAKEN','ชื่อนี้มีผู้ใช้อยู่ในห้องแล้ว กรุณาใช้ชื่ออื่น')
     .replace('ROOM_MEMBER_LIMIT','ห้องนี้มีผู้เข้าร่วมถึงจำนวนสูงสุดแล้ว')
+    .replace('DECK_HAS_ACTIVE_CARDS','นำ Action Card ออกจาก Deck ให้หมดก่อนจึงจะลบ Deck ได้')
     .replace('ROOM_CREATION_RATE_LIMIT','มีการสร้างห้องจำนวนมากเกินไป กรุณาลองใหม่ภายหลัง')
     .replace('ACTIVE_ROOM_LIMIT','ระบบมีห้องที่กำลังใช้งานถึงขีดจำกัดชั่วคราว')
     .replace('ROOM_NOT_FOUND','ไม่พบห้องเกม')
@@ -163,8 +164,10 @@ function lobby(){
   }).join('');
   const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'Waiting')+(m.is_admin?' · Admin':'')+(m.is_bot?' · BOT':'')+'</small></div><span class="presence-label">'+(m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
   const soloActive=!!session.soloSessions?.length;
-  const offlineAdmin=members.find(m=>m.is_admin&&!m.is_bot&&!m.online);
-  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':offlineAdmin?'<button id="claimAdminBtn" class="btn small">รับสิทธิ์ Admin</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
+  const currentAdmin=members.find(m=>m.is_admin&&!m.is_bot);
+  const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
+  const canClaimAdmin=!state.me.is_admin&&(!currentAdmin||offlineAdmin);
+  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':canClaimAdmin?'<button id="claimAdminBtn" class="btn small">รับสิทธิ์ Admin</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
   shell('<main class="page"><div class="lobby-grid"><section class="panel"><span class="eyebrow">ROOM CODE</span><div class="room-code">'+esc(state.room.code)+'</div><h2>'+esc(state.room.title)+'</h2><p class="muted">ส่ง Code นี้ให้ทีม แล้ว Admin กำหนด Role ตามผู้ที่ Online อยู่</p>'+(state.me.is_admin?'<div class="solo-test-box"><div><b>Solo Test Mode</b><small>จำลองครบ 7 Role บนอุปกรณ์เดียว โดยยังคงกติกาเกมจริง</small></div><button id="soloBtn" class="btn '+(soloActive?'ghost':'primary')+'">'+(soloActive?'ปิด Solo Test':'เปิด Solo Test')+'</button></div>':'')+'<div class="member-list">'+memberList+'</div></section><section class="panel"><div class="panel-head"><div><h2>Role Assignment</h2><p>ต้องครบ 7 Role ก่อนเริ่มเกม</p></div><span class="badge">'+assigned.size+'/7</span></div><div class="role-grid">'+roleCards+'</div>'+(state.me.is_admin?'<div class="setup-grid"><label>Scenario Set<select id="scenarioSet" class="select"><option value="1">Scenario Set 1</option><option value="2">Scenario Set 2</option></select></label><label>Starting Cash<input id="startingCash" class="input" type="number" value="11000000" step="1000"></label><label>เวลา / Round (นาที)<input id="roundMinutes" class="input" type="number" min="1" max="60" value="15"></label><label>Twist เมื่อเหลือ (นาที)<input id="twistMinutes" class="input" type="number" min="0" max="59" value="6"></label></div><button id="startBtn" class="btn primary full" '+(assigned.size===7?'':'disabled')+'>เริ่ม Simulation</button>':'<div class="waiting-box">รอ Admin กำหนด Role และเริ่มเกม</div>')+'</section></div></main>',extra);
   $('#leaveBtn').onclick=leave;
   if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=closeRoomNow;
@@ -246,14 +249,16 @@ function teamHtml(){
   const members=state.members.filter(m=>m.role_key);
   const waiting=state.members.filter(m=>!m.role_key&&!m.is_bot);
   const admin=hasAdminControl();
-  const offlineAdmin=state.members.find(m=>m.is_admin&&!m.is_bot&&!m.online);
+  const currentAdmin=state.members.find(m=>m.is_admin&&!m.is_bot);
+  const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
+  const canClaimAdmin=!admin&&(!currentAdmin||offlineAdmin);
   const adminPanel=admin?'<div class="admin-panel"><b>Admin Control</b><div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
     '<button id="extendBtn" class="btn small">+1 min</button>'+
     '<button id="lateJoinBtn" class="btn small">เปิด Join 5 นาที</button>'+
     '<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button></div>'+
     (waiting.length?'<div class="recovery-box"><small>Role Recovery</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">รับช่วง Role</button></div>':'')+
-    '</div>':offlineAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
+    '</div>':canClaimAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">'+(offlineAdmin?'Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้':'ห้องนี้ไม่มี Admin ที่ Active — สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้')+'</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
   return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||'')+'</p></div></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · BOT':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div><button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ Ready แล้ว · กดเพื่อยกเลิก':'Ready to Lock')+'</button><p class="muted small-text">ตำแหน่งจะ Lock เมื่อครบทั้ง 7 Role หรือหมดเวลา</p>'+adminPanel+'</aside>';
 }
 function game(){
