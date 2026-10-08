@@ -107,6 +107,9 @@ function errText(e){
     .replace('LAST_ACTIVE_PARTICIPANT_CONFIRM_CLOSE','คุณเป็นคนสุดท้าย หากออก ห้องจะถูกปิดถาวร')
     .replace('ROLE_HOLDER_STILL_ONLINE','เจ้าของ Role เดิมยัง Online อยู่')
     .replace('TARGET_ALREADY_HAS_ROLE','ผู้เล่นนี้มี Role อยู่แล้ว')
+    .replace('SOLO_REVEAL_TWIST_FIRST','Round นี้มี Twist — กดเปิด Twist ก่อน แล้วตรวจ/ปรับ Action ก่อนจบรอบ')
+    .replace('SOLO_TEST_7_VIRTUAL_ROLES_REQUIRED','ต้องเป็นห้องทดสอบที่มี Virtual Roles ครบ 7 คน')
+    .replace('SOLO_TEST_ONLY','ใช้ได้เฉพาะห้อง Solo Test')
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
 }
 async function rpc(name,args={}){
@@ -408,7 +411,10 @@ function teamHtml(){
   const currentAdmin=state.members.find(m=>m.is_admin&&!m.is_bot);
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
   const canClaimAdmin=!admin&&(!currentAdmin||offlineAdmin);
-  const adminPanel=admin?'<div class="admin-panel"><b>Admin Control</b><div class="admin-actions">'+
+  const soloQuickTest=admin&&state.room.is_test_mode&&session?.soloSessions?.length===7
+    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · QUICK CONTROL</b></div><p>ควบคุม Virtual Roles ทั้ง 7 จากเครื่องเดียว โดยไม่ต้องสลับ Role เพื่อกด Ready</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>เปิด Twist ตอนนี้ (ถ้ามี)</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ All Ready · จบรอบ '+state.room.current_round+'</button><small>ใช้เฉพาะห้อง Solo Test · คิดคะแนนจาก Actions ที่วางจริง</small></div>'
+    :'';
+  const adminPanel=admin?'<div class="admin-panel"><b>Admin Control</b>'+soloQuickTest+'<div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
     '<button id="extendBtn" class="btn small">+1 min</button>'+
     '<button id="lateJoinBtn" class="btn small">เปิด Join 5 นาที</button>'+
@@ -428,6 +434,8 @@ function game(){
   if(consequenceDone)consequenceDone.onclick=()=>{const r=(state.round_results||[]).at(-1);if(r)sessionStorage.setItem(consequenceKey(r.round_no),'1');game();};
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   if($('#readyBtn')) $('#readyBtn').onclick=e=>toggleReady(e.currentTarget);
+  if($('#soloRevealTwistBtn')) $('#soloRevealTwistBtn').onclick=e=>soloRevealTwistNow(e.currentTarget);
+  if($('#soloAllReadyBtn')) $('#soloAllReadyBtn').onclick=e=>soloAllReadyAndEndRound(e.currentTarget);
   if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
   if($('#pauseBtn')) $('#pauseBtn').onclick=e=>togglePause(e.currentTarget);
   if($('#extendBtn')) $('#extendBtn').onclick=e=>extendRound(e.currentTarget);
@@ -671,6 +679,56 @@ async function recoverRole(btn){
     }catch(e){toast(errText(e),'error');}
   });
 }
+async function soloRevealTwistNow(btn){
+  if(!state?.room?.is_test_mode||!session?.adminToken)return toast('คำสั่งนี้ใช้ได้เฉพาะ Admin ใน Solo Test','error');
+  if(state.room.paused_at)return toast('Resume ห้องทดสอบก่อน','error');
+  return withButtonBusy(btn,'กำลังเปิด Twist…',async()=>{
+    try{
+      const result=await rpc('bcp_web_solo_reveal_twist_now',{
+        p_room_id:state.room.id,p_session_token:adminToken()
+      });
+      if(result?.reason==='NO_TWIST_THIS_ROUND'){
+        toast('รอบนี้ไม่มี Twist ตาม Scenario','success');
+      }else if(result?.already){
+        toast('Twist ถูกเปิดอยู่แล้ว','success');
+      }else{
+        toast('เปิด Twist สำหรับ Solo Test แล้ว — ปรับ Action ก่อนจบรอบได้','success');
+      }
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+async function soloAllReadyAndEndRound(btn){
+  if(!state?.room?.is_test_mode||!session?.adminToken)return toast('คำสั่งนี้ใช้ได้เฉพาะ Admin ใน Solo Test','error');
+  if(state.room.paused_at)return toast('Resume ห้องทดสอบก่อน','error');
+  const round=state.room.current_round;
+  const active=(state.placements||[]).filter(p=>!p.removed_at).length;
+  const msg=[
+    'จบ Round '+round+' ตอนนี้เลยหรือไม่?',
+    '',
+    '• ระบบจะตั้ง READY ให้ Virtual Roles ทั้ง 7 อัตโนมัติ',
+    '• ใช้ Action '+active+' ใบที่อยู่บน Timeline คิดคะแนนจริง',
+    '• Action ที่ขาด/ลำดับผิดจะถูกหัก BC ตามกติกา',
+    '• ไม่สามารถย้อนกลับมาแก้ Round นี้ได้',
+    '',
+    'หาก Round มี Twist ต้องเปิด Twist ก่อนเพื่อให้ได้ทดสอบการตอบสนองครบ'
+  ].join('\n');
+  if(!confirm(msg))return;
+  return withButtonBusy(btn,'กำลัง All Ready และคำนวณ…',async()=>{
+    try{
+      const result=await rpc('bcp_web_solo_all_ready_and_lock',{
+        p_room_id:state.room.id,p_session_token:adminToken()
+      });
+      if(result?.all_ready){
+        toast('All Ready 7/7 · Round '+round+' ถูก Lock และคำนวณผลแล้ว','success');
+      }
+      await refresh();
+    }catch(e){
+      toast(errText(e),'error');
+    }
+  });
+}
+
 async function toggleReady(btn){
   return withButtonBusy(btn,state.me.ready_to_lock?'กำลังยกเลิก…':'กำลัง Ready…',async()=>{
     try{
