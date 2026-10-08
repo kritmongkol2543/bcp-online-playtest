@@ -15,6 +15,23 @@ const ROLE_LABEL = {
   CMT_HO:'CMT/LRTs · HO', CMT_PPD:'CMT/LRTs · PPD', CMT_NKL:'CMT/LRTs · NKL'
 };
 const ROLES = Object.keys(ROLE_LABEL);
+const CHP_CATALOG = Object.freeze({
+  'CHP-1':{short:"Air Pollution",full:"มลภาวะหมอกควัน / มลพิษทางอากาศ"},
+  'CHP-2':{short:"Infectious Disease",full:"การแพร่ระบาดของโรคติดต่อ"},
+  'CHP-3':{short:"Fire & Smoke",full:"เพลิงไหม้ / ควันไฟ"},
+  'CHP-4':{short:"Flood",full:"น้ำท่วม"},
+  'CHP-5':{short:"Earthquake",full:"แผ่นดินไหว"},
+  'CHP-6':{short:"Bomb Threat",full:"การขู่วางระเบิด"},
+  'CHP-7':{short:"Civil Unrest",full:"การชุมนุมประท้วง / เหตุความไม่สงบในบ้านเมือง"},
+  'CHP-8':{short:"Severe Weather",full:"เหตุสภาพอากาศรุนแรง"},
+  'CHP-9':{short:"Active Shooter",full:"สถานการณ์ผู้ก่อเหตุกราดยิง"},
+  'CHP-10':{short:"Gas Leak",full:"เหตุการณ์แก๊สรั่ว"},
+  'CHP-11':{short:"Oil / Chemical Spill",full:"การรั่วไหลของน้ำมันและสารเคมี"},
+  'CHP-12':{short:"Supply Chain Crisis",full:"วิกฤตห่วงโซ่อุปทานและพลังงานขาดแคลน"},
+  'CHP-13':{short:"Cyberattack",full:"การโจมตีทางไซเบอร์"},
+  'CHP-14':{short:"Reputation Crisis",full:"ความเสียหายด้านชื่อเสียงภาพลักษณ์องค์กร"}
+});
+function chpMeta(code){return CHP_CATALOG[code]||{short:code,full:code};}
 const STORE='bcp_online_playtest_session_v1';
 
 let session = JSON.parse(localStorage.getItem(STORE)||'null');
@@ -139,7 +156,9 @@ function setConnectionState(next){
 }
 
 function topbar(extra=''){
-  return '<header class="topbar"><div class="brand"><img class="brand-logo" src="./assets/tccc-learning-lab.webp" alt="TCCC Learning Lab"><div class="brand-product"><b>BCP PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+extra+'</div></header>';
+  const displayButton=state?.room&&hasAdminControl()&&['lobby','playing','completed'].includes(state.room.status)
+    ?'<button class="btn small display-launch" type="button" data-open-central-display title="เปิดหน้าจอภาพรวมสำหรับจอกลาง">◩ CENTRAL DISPLAY ↗</button><button class="btn small ghost display-revoke" type="button" data-stop-central-display title="ยกเลิกสิทธิ์จอกลางที่เปิดอยู่">REVOKE</button>':'';
+  return '<header class="topbar"><div class="brand"><img class="brand-logo" src="./assets/tccc-learning-lab.webp" alt="TCCC Learning Lab"><div class="brand-product"><b>BCP PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+displayButton+extra+'</div></header>';
 }
 function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
 
@@ -372,7 +391,8 @@ function handHtml(){
   const chps=ownedChps();
   const deckSwitch='<div class="deck-library-label"><b>SELECT CHP DECK</b><small>สลับ CHP ได้ทันที</small></div><div class="private-deck-grid" role="group" aria-label="CHP Decks ของผู้เล่น">'+chps.map(chp=>{
     const active=selectedChp===chp;
-    return '<button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span>'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>';
+    const label=chpMeta(chp);
+    return '<button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'" title="'+esc(chp+' — '+label.full)+'" aria-label="'+esc(chp+' '+label.short+' — '+label.full)+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span class="deck-name">'+esc(label.short)+'</span><span class="deck-action-count">'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>';
   }).join('')+'</div>';
   const header='<div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>My CHP Decks</h2><p>'+esc(ROLE_LABEL[role])+' · '+hand.length+' การ์ดใน Role นี้</p></div></div><span class="badge privacy-badge">PRIVATE</span></div>';
   if(!selectedChp){
@@ -401,7 +421,7 @@ function handHtml(){
     body='<div class="hand-grid">'+cards.map(cardHtml).join('')+'</div>';
   }
 
-  return '<section class="panel hand private-decks cards-reveal" id="privateDeck">'+header+deckSwitch+'<div class="deck-detail"><div class="deck-detail-head"><div><span class="eyebrow">ACTIVE DECK</span><h3>'+esc(selectedChp)+'</h3><p>ลากการ์ดไปยัง Shared Timeline หรือกด PLACE CARD</p></div><span class="deck-active-indicator">ACTIVE</span></div>'+body+'</div></section>';
+  return '<section class="panel hand private-decks cards-reveal" id="privateDeck">'+header+deckSwitch+'<div class="deck-detail"><div class="deck-detail-head"><div><span class="eyebrow">ACTIVE DECK</span><h3>'+esc(selectedChp)+' · '+esc(chpMeta(selectedChp).short)+'</h3><p class="chp-official-name">'+esc(chpMeta(selectedChp).full)+'</p><p>ลากการ์ดไปยัง Shared Timeline หรือกด PLACE CARD</p></div><span class="deck-active-indicator">ACTIVE</span></div>'+body+'</div></section>';
 }
 
 function teamHtml(){
@@ -996,6 +1016,44 @@ function stopRealtime(clearClock=true){
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
   if(clearClock&&clockTimer){clearInterval(clockTimer);clockTimer=null;}
 }
+
+async function launchCentralDisplay(button){
+  if(!state?.room||!hasAdminControl())return toast('เฉพาะ Admin ที่เปิด Central Display ได้','error');
+  // Open a blank tab synchronously to avoid popup blockers following asynchronous RPC.
+  const tab=window.open('about:blank','_blank');
+  if(tab){tab.document.title='Opening BCP Central Display';tab.document.body.innerHTML='<p style="font:20px sans-serif;padding:36px">Connecting to BCP Central Display…</p>';}
+  return withButtonBusy(button,'OPENING DISPLAY…',async()=>{
+    try{
+      const roomId=state.room.id;
+      const reply=await rpc('bcp_web_issue_display_token',{p_room_id:roomId,p_session_token:adminToken()});
+      const fragment=new URLSearchParams({room:reply.room_id,token:reply.display_token});
+      const url=new URL('./display.html',location.href);
+      url.hash=fragment.toString(); // Fragment is not transmitted in HTTP requests.
+      if(tab&&!tab.closed){tab.location.assign(url.href);}
+      else window.prompt('เบราว์เซอร์บล็อกหน้าต่างใหม่ ให้คัดลอกลิงก์นี้ไปเปิดในจอกลาง',url.href);
+      toast('เปิด Central Display แล้ว · การเปิดใหม่จะยกเลิกสิทธิ์จอเดิม','success');
+    }catch(e){
+      if(tab&&!tab.closed)tab.close();
+      toast('เปิดจอกลางไม่สำเร็จ: '+errText(e),'error');
+    }
+  });
+}
+async function revokeCentralDisplay(button){
+  if(!hasAdminControl()||!state?.room)return;
+  if(!confirm('ยกเลิกสิทธิ์ Central Display ที่เปิดอยู่? หน้าจอเดิมจะหยุดรับข้อมูล'))return;
+  return withButtonBusy(button,'REVOKING…',async()=>{
+    try{
+      await rpc('bcp_web_revoke_display_token',{p_room_id:state.room.id,p_session_token:adminToken()});
+      toast('ยกเลิกสิทธิ์ Central Display แล้ว','success');
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+document.addEventListener('click',e=>{
+  const launch=e.target.closest('[data-open-central-display]');
+  if(launch){e.preventDefault();launchCentralDisplay(launch);return;}
+  const revoke=e.target.closest('[data-stop-central-display]');
+  if(revoke){e.preventDefault();revokeCentralDisplay(revoke);}
+});
 
 document.addEventListener('pointerdown',e=>{
   const btn=e.target.closest('button');
