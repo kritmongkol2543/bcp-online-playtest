@@ -167,3 +167,11 @@ Current play model no longer asks players to select a response Level.
 - **Solo UX:** virtual participant rows are labelled TEST rather than suggesting autonomous AI Bot behavior.
 - **Cash rule unchanged:** playing an Action debits Cash immediately; removing it does not refund Cash. Round Cash Used reporting now includes removed charged placements so it matches the debit ledger. Whether to move to reservation-and-commit is an unresolved game-rule decision.
 - **Testing:** 8/8 automated bot/lifecycle/operations regressions passed; an isolated disposable room verified BC=0 early terminal outcome and submission/aggregation of playtest feedback. Browser-rendered multi-device tests still required.
+
+## Solo Test manual round completion (2026-10-08)
+
+Admin of a Solo Test room with exactly seven virtual role holders can use **All Ready · End Round** in the Team panel, regardless of the currently selected virtual role. The action atomically marks all seven virtual roles Ready, executes the existing authoritative round scorer, and advances the game or opens the final Debrief. No Action Card is auto-filled, and skipped/missing/wasted Actions are penalized by the ordinary rule system.
+
+If that scripted round contains an unrevealed Twist, this shortcut refuses to lock the round. The Admin can press **Reveal Twist Now** first (no need to wait for the countdown), adjust Actions after seeing the Twist, then press All Ready. Rounds without Twist can be ended immediately. A confirmation dialog warns that locking cannot be undone and that all real placements are scored.
+
+The two RPCs, `bcp_web_solo_reveal_twist_now` and `bcp_web_solo_all_ready_and_lock`, require an active admin token, an active and unpaused Solo Test room, and all seven roles assigned to active virtual (is_bot) members. These checks are enforced server-side; regular human multiplayer rooms cannot invoke the shortcuts even if the UI is modified. No gameplay/source scoring changes were made.
