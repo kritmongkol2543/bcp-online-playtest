@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111929">
+  <meta name="referrer" content="no-referrer">
+  <title>BCP Central Display | TCCC Learning Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./display.css?v=20261008.1">
+</head>
+<body>
+  <div class="display-shell">
+    <header class="display-header">
+      <div class="brand">
+        <img src="./assets/tccc-learning-lab.webp" alt="TCCC Learning Lab">
+        <div class="brand-wordmark"><strong>BCP CENTRAL DISPLAY</strong><span>Business Continuity Simulation</span></div>
+      </div>
+      <div class="display-header-actions">
+        <span id="syncStatus" class="sync-state"><span class="status-dot"></span> CONNECTING</span>
+        <span id="roomCode" class="room-code">ROOM —</span>
+        <button id="fullscreenBtn" class="viewer-button" type="button" aria-label="Enter fullscreen">⛶ FULLSCREEN</button>
+      </div>
+    </header>
+    <main id="displayApp" class="display-content" aria-live="off">
+      <div class="loading"><div class="spinner"></div><h1>CONNECTING TO ROOM</h1><p>กำลังเชื่อมต่อหน้าจอภาพรวม</p></div>
+    </main>
+    <footer class="display-footer">
+      <span>SHARED TEAM OVERVIEW <span class="bullet">•</span> PRIVATE ROLE DATA HIDDEN</span>
+      <span id="refreshLabel">LIVE SYNC · EVERY 3 SEC</span>
+      <span id="localClock">--:--:--</span>
+    </footer>
+  </div>
+  <script type="module" src="./display.js?v=20261008.1"></script>
+</body>
+</html>
