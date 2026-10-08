@@ -87,14 +87,14 @@ function toast(msg,type=''){ const el=document.createElement('div'); el.classNam
 function errText(e){
   return (e?.message||String(e||'Error'))
     .replace('ALL_7_ROLES_REQUIRED','ต้องกำหนด Role ให้ครบ 7 Role ก่อนเริ่ม')
-    .replace('ALL_7_PLAYERS_MUST_BE_READY','ต้อง Ready ครบทั้ง 7 Role')
+    .replace('ALL_7_PLAYERS_MUST_BE_READY','ต้องมี Ready ครบทั้ง 7 Role ก่อนจบรอบ')
     .replace('ALL_7_ROLES_MUST_BE_ONLINE','Role ครบแล้ว แต่ยังมีผู้เล่น Offline — ให้กลับเข้าเกมหรือเปลี่ยนผู้เล่นก่อนเริ่ม')
-    .replace('ADMIN_STILL_ONLINE','Admin เดิมยัง Online อยู่ จึงยังรับสิทธิ์แทนไม่ได้')
+    .replace('ADMIN_STILL_ONLINE','Admin เดิมยังใช้งานอยู่ จึงรับสิทธิ์แทนไม่ได้')
     .replace('INSUFFICIENT_CASH','Cash ไม่เพียงพอ')
     .replace('CARD_ALREADY_USED','การ์ดใบนี้ถูกใช้ใน Site นี้แล้ว')
     .replace('ADMIN_REQUIRED','เฉพาะ Admin เท่านั้น')
     .replace('ROLE_REQUIRED','ยังไม่ได้รับ Role')
-    .replace('SITE_ROLE_REQUIRED','Role นี้จัดการ Deck ของ Site นี้ไม่ได้')
+    .replace('SITE_ROLE_REQUIRED','Role นี้ไม่มีสิทธิ์ใช้การ์ดกับ Site ที่เลือก')
     .replace('GAME_NOT_PLAYING','เกมยังไม่ได้เริ่ม')
     .replace('GAME_ALREADY_STARTED','เกมเริ่มแล้ว ห้องปิดรับผู้เล่นใหม่')
     .replace('ROOM_CLOSED','ห้องนี้ปิดแล้ว')
@@ -107,7 +107,7 @@ function errText(e){
     .replace('LAST_ACTIVE_PARTICIPANT_CONFIRM_CLOSE','คุณเป็นคนสุดท้าย หากออก ห้องจะถูกปิดถาวร')
     .replace('ROLE_HOLDER_STILL_ONLINE','เจ้าของ Role เดิมยัง Online อยู่')
     .replace('TARGET_ALREADY_HAS_ROLE','ผู้เล่นนี้มี Role อยู่แล้ว')
-    .replace('SOLO_REVEAL_TWIST_FIRST','Round นี้มี Twist — กดเปิด Twist ก่อน แล้วตรวจ/ปรับ Action ก่อนจบรอบ')
+    .replace('SOLO_REVEAL_TWIST_FIRST','Round นี้มี Twist — เปิด Twist แล้วตรวจและปรับการ์ดก่อนจบรอบ')
     .replace('SOLO_TEST_7_VIRTUAL_ROLES_REQUIRED','ต้องเป็นห้องทดสอบที่มี Virtual Roles ครบ 7 คน')
     .replace('SOLO_TEST_ONLY','ใช้ได้เฉพาะห้อง Solo Test')
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
@@ -145,7 +145,7 @@ function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(
 
 function landing(){
   stopRealtime(); state=null;
-  shell('<main class="landing"><section class="hero panel"><div class="learning-band"><span></span>TCCC LEARNING LAB · TEAM CRISIS SIMULATION</div><span class="eyebrow">BUSINESS CONTINUITY / ONLINE PLAYTEST</span><h1>ตัดสินใจ<br>เมื่อข้อมูลไม่ครบ</h1><p>BCP Online Playtest สำหรับ 7 Role — แต่ละคนเห็นข้อมูลและ Action ของตัวเอง ก่อนประกอบการตัดสินใจร่วมกันบน Timeline แบบ Realtime</p><div class="hero-grid"><div><small>01</small><b>7 Roles</b><span>CMC · CMD ×3 · CMT/LRTs ×3</span></div><div><small>02</small><b>4 Rounds</b><span>Scenario → Decision → Twist → Lock</span></div><div><small>03</small><b>Realtime</b><span>Private CHP Decks → Shared Timeline</span></div></div></section><section class="panel join-panel"><div class="join-kicker">ENTER SIMULATION</div><div class="tabs"><button id="tabJoin" class="tab active">Join Room</button><button id="tabCreate" class="tab">Create Room</button></div><div id="joinForm"><label>ชื่อผู้เล่น<input id="playerName" maxlength="60" placeholder="ชื่อที่ใช้ในเกม"></label><label>Room Code<input id="roomCode" maxlength="6" class="code-input" placeholder="ABC123"></label><button id="joinBtn" class="btn primary">เข้าห้องเกม</button></div><div id="createForm" hidden><label>ชื่อ Admin<input id="adminName" maxlength="60" placeholder="ชื่อ Admin / ผู้เล่น"></label><label>ชื่อห้อง<input id="roomTitle" maxlength="100" value="BCP Online Playtest"></label><button id="createBtn" class="btn primary">สร้างห้องเกม</button></div>'+(session?'<button id="resumeBtn" class="btn ghost full">กลับเข้าสู่ Session ล่าสุด</button>':'')+'</section></main>');
+  shell('<main class="landing"><section class="hero panel"><div class="learning-band"><span></span>TCCC LEARNING LAB · TEAM CRISIS SIMULATION</div><span class="eyebrow">BUSINESS CONTINUITY / ONLINE PLAYTEST</span><h1>ตัดสินใจ<br>เมื่อข้อมูลไม่ครบ</h1><p>เกมจำลองการรับมือวิกฤตสำหรับ 7 บทบาท แต่ละคนมีข้อมูลและการ์ดเฉพาะตัว ก่อนร่วมกันตัดสินใจบน Shared Timeline</p><div class="hero-grid"><div><small>01</small><b>7 Roles</b><span>CMC · CMD ×3 · CMT/LRTs ×3</span></div><div><small>02</small><b>4 Rounds</b><span>Scenario → Decision → Twist → Lock</span></div><div><small>03</small><b>Realtime</b><span>Private CHP Decks → Shared Timeline</span></div></div></section><section class="panel join-panel"><div class="join-kicker">ENTER SIMULATION</div><div class="tabs"><button id="tabJoin" class="tab active">Join Room</button><button id="tabCreate" class="tab">Create Room</button></div><div id="joinForm"><label>ชื่อผู้เล่น<input id="playerName" maxlength="60" placeholder="ชื่อที่ใช้ในเกม"></label><label>Room Code<input id="roomCode" maxlength="6" class="code-input" placeholder="ABC123"></label><button id="joinBtn" class="btn primary">JOIN ROOM</button></div><div id="createForm" hidden><label>ชื่อผู้ดูแลห้อง<input id="adminName" maxlength="60" placeholder="ชื่อที่ใช้ดูแลห้อง"></label><label>ชื่อห้อง<input id="roomTitle" maxlength="100" value="BCP Online Playtest"></label><button id="createBtn" class="btn primary">CREATE ROOM</button></div>'+(session?'<button id="resumeBtn" class="btn ghost full">RESUME SESSION</button>':'')+'</section></main>');
   $('#tabJoin').onclick=()=>{ $('#joinForm').hidden=false; $('#createForm').hidden=true; $('#tabJoin').classList.add('active'); $('#tabCreate').classList.remove('active'); };
   $('#tabCreate').onclick=()=>{ $('#joinForm').hidden=true; $('#createForm').hidden=false; $('#tabCreate').classList.add('active'); $('#tabJoin').classList.remove('active'); };
   $('#roomCode').oninput=e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -210,7 +210,7 @@ function closedRoom(){
     lobby_inactive:'Lobby ไม่มีการใช้งานเกิน 30 นาที',
     playing_abandoned:'ไม่มีผู้เล่น Online เกิน 60 นาที'
   }[state.room.close_reason]||'Session ถูกปิด';
-  shell('<main class="page"><section class="panel closed-panel"><span class="eyebrow">SESSION CLOSED</span><h1>ห้องนี้ถูกปิดแล้ว</h1><p>'+esc(reason)+'</p><p class="muted">Room Code นี้จะไม่เปิดให้ Join อีก และข้อมูล Session จะถูกเก็บตามรอบ retention ก่อนย้ายเป็นสรุป Archive</p><button id="clearClosedBtn" class="btn primary">กลับหน้าแรก</button></section></main>');
+  shell('<main class="page"><section class="panel closed-panel"><span class="eyebrow">SESSION CLOSED</span><h1>ห้องนี้ถูกปิดแล้ว</h1><p>'+esc(reason)+'</p><p class="muted">Room Code นี้ใช้เข้าห้องอีกไม่ได้ ข้อมูลการเล่นจะถูกเก็บตามระยะเวลาที่ระบบกำหนด</p><button id="clearClosedBtn" class="btn primary">กลับหน้าแรก</button></section></main>');
   $('#clearClosedBtn').onclick=()=>{saveSession(null);landing();};
 }
 async function leave(btn){
@@ -244,16 +244,16 @@ function lobby(){
   const assigned=new Set(members.filter(x=>x.role_key).map(x=>x.role_key));
   const roleCards=ROLES.map(r=>{
     const holder=members.find(m=>m.role_key===r);
-    const options='<option value="">— เลือกผู้เล่น —</option>'+members.map(m=>'<option value="'+m.id+'" '+(holder?.id===m.id?'selected':'')+'>'+esc(m.display_name)+(m.is_admin?' · Admin':'')+'</option>').join('');
+    const options='<option value="">— SELECT PLAYER —</option>'+members.map(m=>'<option value="'+m.id+'" '+(holder?.id===m.id?'selected':'')+'>'+esc(m.display_name)+(m.is_admin?' · Admin':'')+'</option>').join('');
     return '<div class="role-card"><div><b>'+ROLE_LABEL[r]+'</b><small>'+(holder?esc(holder.display_name):'ยังไม่กำหนด')+'</small></div>'+(state.me.is_admin?'<select data-role="'+r+'" class="select role-select">'+options+'</select>':'')+'</div>';
   }).join('');
-  const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'Waiting')+(m.is_admin?' · Admin':'')+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="presence-label">'+(m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
+  const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'UNASSIGNED')+(m.is_admin?' · Admin':'')+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="presence-label">'+(m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
   const soloActive=!!session.soloSessions?.length;
   const currentAdmin=members.find(m=>m.is_admin&&!m.is_bot);
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
   const canClaimAdmin=!state.me.is_admin&&(!currentAdmin||offlineAdmin);
-  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button>':canClaimAdmin?'<button id="claimAdminBtn" class="btn small">รับสิทธิ์ Admin</button>':'')+'<button id="leaveBtn" class="btn small ghost">ออก</button>';
-  shell('<main class="page"><div class="lobby-grid"><section class="panel"><span class="eyebrow">ROOM CODE</span><div class="room-code">'+esc(state.room.code)+'</div><h2>'+esc(state.room.title)+'</h2><p class="muted">ส่ง Code นี้ให้ทีม แล้ว Admin กำหนด Role ตามผู้ที่ Online อยู่</p>'+(state.me.is_admin?'<div class="admin-role-note"><b>Admin = สิทธิ์ควบคุมห้อง ไม่ใช่ Game Role</b><span>Admin เล่นด้วยได้ — ถ้าเล่นจริงให้ Assign ชื่อตัวเองเข้า 1 ใน 7 Role หรือเปิด Solo Test เพื่อสลับเล่นทุก Role บนอุปกรณ์เดียว</span></div><div class="solo-test-box"><div><b>Solo Test · Admin + 7 Test Players</b><small>หลังเริ่มเกมจะสลับได้ระหว่าง Admin Console และ CMC / CMD / CMT ทุก Role โดยไม่ต้องเปิด 7 เครื่อง</small></div><button id="soloBtn" class="btn '+(soloActive?'ghost':'primary')+'">'+(soloActive?'ปิด Solo Test':'เปิด Solo Test')+'</button></div>':'')+'<div class="member-list">'+memberList+'</div></section><section class="panel"><div class="panel-head"><div><h2>Role Assignment</h2><p>ต้องครบ 7 Role ก่อนเริ่มเกม · Admin จะถือ Role ด้วยก็ได้</p></div><span class="badge">'+assigned.size+'/7</span></div><div class="role-grid">'+roleCards+'</div>'+(state.me.is_admin?'<div class="setup-grid"><label>Scenario Set<select id="scenarioSet" class="select"><option value="1">Scenario Set 1</option><option value="2">Scenario Set 2</option></select></label><label>Starting Cash<input id="startingCash" class="input" type="number" value="11000000" step="1000"></label><label>เวลา / Round (นาที)<input id="roundMinutes" class="input" type="number" min="1" max="60" value="15"></label><label>Twist เมื่อเหลือ (นาที)<input id="twistMinutes" class="input" type="number" min="0" max="59" value="6"></label></div><button id="startBtn" class="btn primary full" '+(assigned.size===7?'':'disabled')+'>เริ่ม Simulation</button>':'<div class="waiting-box">รอ Admin กำหนด Role และเริ่มเกม</div>')+'</section></div></main>',extra);
+  const extra=(state.me.is_admin?'<button id="closeRoomBtn" class="btn small danger-btn">CLOSE ROOM</button>':canClaimAdmin?'<button id="claimAdminBtn" class="btn small">TAKE ADMIN CONTROL</button>':'')+'<button id="leaveBtn" class="btn small ghost">EXIT</button>';
+  shell('<main class="page"><div class="lobby-grid"><section class="panel"><span class="eyebrow">ROOM CODE</span><div class="room-code">'+esc(state.room.code)+'</div><h2>'+esc(state.room.title)+'</h2><p class="muted">แชร์ Room Code ให้ทีม จากนั้นกำหนด Role ให้ผู้เล่นก่อนเริ่มเกม</p>'+(state.me.is_admin?'<div class="admin-role-note"><b>ADMIN ≠ PLAYER ROLE</b><span>Admin ควบคุมห้องได้ และสามารถรับ Role เพื่อเล่นด้วย หรือเปิด Solo Test เพื่อทดลองครบทั้ง 7 Role บนอุปกรณ์เดียว</span></div><div class="solo-test-box"><div><b>SOLO TEST · 7 VIRTUAL ROLES</b><small>สลับทดสอบแต่ละ Role บนเครื่องเดียว และจบรอบได้จาก Admin Console</small></div><button id="soloBtn" class="btn '+(soloActive?'ghost':'primary')+'">'+(soloActive?'ปิด Solo Test':'เปิด Solo Test')+'</button></div>':'')+'<div class="member-list">'+memberList+'</div></section><section class="panel"><div class="panel-head"><div><h2>ROLE ASSIGNMENT</h2><p>กำหนดให้ครบ 7 Role ก่อนเริ่มเกม โดย Admin สามารถรับ Role เพื่อเล่นด้วยได้</p></div><span class="badge">'+assigned.size+'/7</span></div><div class="role-grid">'+roleCards+'</div>'+(state.me.is_admin?'<div class="setup-grid"><label>SCENARIO SET<select id="scenarioSet" class="select"><option value="1">Scenario Set 1</option><option value="2">Scenario Set 2</option></select></label><label>STARTING CASH<input id="startingCash" class="input" type="number" value="11000000" step="1000"></label><label>ROUND DURATION (MIN)<input id="roundMinutes" class="input" type="number" min="1" max="60" value="15"></label><label>TWIST AT (MIN LEFT)<input id="twistMinutes" class="input" type="number" min="0" max="59" value="6"></label></div><button id="startBtn" class="btn primary full" '+(assigned.size===7?'':'disabled')+'>START SIMULATION</button>':'<div class="waiting-box">รอผู้ดูแลกำหนด Role และเริ่มเกม</div>')+'</section></div></main>',extra);
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   if($('#closeRoomBtn')) $('#closeRoomBtn').onclick=e=>closeRoomNow(e.currentTarget);
   if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
@@ -330,16 +330,16 @@ function storyHtml(){
   const global=esc(s.big_story||'').replace(/\n/g,'<br>');
   const local=esc(s.site_story||'').replace(/\n/g,'<br>');
   const twist=esc([s.twist_story,s.site_twist_story].filter(Boolean).join('\n\n')).replace(/\n/g,'<br>');
-  return '<section class="panel story" id="situationPanel" aria-label="Situation brief"><div class="section-heading"><div class="section-heading-label"><span class="section-step">01</span><div><span class="eyebrow">SITUATION / ROUND '+state.room.current_round+'</span><h2>สถานการณ์ที่ต้องรับมือ</h2><p>อ่านข้อมูลที่ได้รับ แล้วหารือกับทีมก่อนเลือก Action</p></div></div>'+(state.room.twist_revealed?'<span class="badge danger">CRISIS UPDATE</span>':'<span class="badge brief-tag">IN PROGRESS</span>')+'</div><div class="brief-grid '+(!s.site_story?'brief-grid-single':'')+'"><div class="story-block"><div class="story-label"><span class="story-dot global"></span><b>GLOBAL BRIEF</b><small>ทุก Role มองเห็น</small></div><p>'+global+'</p></div>'+(s.site_story?'<div class="story-block site"><div class="story-label"><span class="story-dot site"></span><b>MY SITE BRIEF</b><small>ข้อมูลเฉพาะพื้นที่</small></div><p>'+local+'</p></div>':'')+'</div>'+(s.twist_story||s.site_twist_story?'<div class="story-block twist" role="status"><div class="story-label"><span class="story-dot twist"></span><b>CRISIS UPDATE</b><small>เงื่อนไขล่าสุด</small></div><p>'+twist+'</p></div>':'')+'</section>';
+  return '<section class="panel story" id="situationPanel" aria-label="Situation brief"><div class="section-heading"><div class="section-heading-label"><span class="section-step">01</span><div><span class="eyebrow">SITUATION / ROUND '+state.room.current_round+'</span><h2>Situation Brief</h2><p>อ่านข้อมูลที่ได้รับและหารือกับทีม ก่อนเลือกการ์ดตอบสนอง</p></div></div>'+(state.room.twist_revealed?'<span class="badge danger">CRISIS UPDATE</span>':'<span class="badge brief-tag">LIVE ROUND</span>')+'</div><div class="brief-grid '+(!s.site_story?'brief-grid-single':'')+'"><div class="story-block"><div class="story-label"><span class="story-dot global"></span><b>GLOBAL BRIEF</b><small>ข้อมูลร่วมกันของทุก Role</small></div><p>'+global+'</p></div>'+(s.site_story?'<div class="story-block site"><div class="story-label"><span class="story-dot site"></span><b>MY SITE BRIEF</b><small>ข้อมูลเฉพาะ Site ของคุณ</small></div><p>'+local+'</p></div>':'')+'</div>'+(s.twist_story||s.site_twist_story?'<div class="story-block twist" role="status"><div class="story-label"><span class="story-dot twist"></span><b>CRISIS UPDATE</b><small>เงื่อนไขล่าสุด</small></div><p>'+twist+'</p></div>':'')+'</section>';
 }
 function statsHtml(){
   const ready=state.members.filter(m=>m.role_key&&m.ready_to_lock).length;
   const round=Number(state.room.current_round);
-  return '<div class="game-dashboard"><div class="dashboard-summary"><div class="dashboard-name"><span class="eyebrow">SIMULATION IN PROGRESS</span><h1>Round '+round+' <span>/ 4</span></h1><p>Team Decision Room · '+esc(state.room.code)+'</p></div><div class="round-track" aria-label="Round '+round+' of 4">'+[1,2,3,4].map(n=>'<span class="round-node '+(n<round?'complete':n===round?'current':'')+'"></span>').join('')+'</div></div><div class="stats"><div class="stat-timer"><small><span class="metric-symbol">◷</span> TIME REMAINING</small><b id="clock">--:--</b></div><div><small>CASH AVAILABLE</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+Number(state.room.business_continuity)+'</b></div><div class="stat-ready"><small>TEAM READY</small><b>'+ready+'<span> / 7</span></b><div class="ready-meter"><i style="width:'+(ready/7*100)+'%"></i></div></div></div></div>';
+  return '<div class="game-dashboard"><div class="dashboard-summary"><div class="dashboard-name"><span class="eyebrow">SIMULATION LIVE ROUND</span><h1>Round '+round+' <span>/ 4</span></h1><p>ROOM · '+esc(state.room.code)+'</p></div><div class="round-track" aria-label="Round '+round+' of 4">'+[1,2,3,4].map(n=>'<span class="round-node '+(n<round?'complete':n===round?'current':'')+'"></span>').join('')+'</div></div><div class="stats"><div class="stat-timer"><small><span class="metric-symbol">◷</span> TIME REMAINING</small><b id="clock">--:--</b></div><div><small>CASH AVAILABLE</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+Number(state.room.business_continuity)+'</b></div><div class="stat-ready"><small>TEAM READY</small><b>'+ready+'<span> / 7</span></b><div class="ready-meter"><i style="width:'+(ready/7*100)+'%"></i></div></div></div></div>';
 }
 function workflowHtml(){
   const placed=(state.placements||[]).filter(p=>!p.removed_at).length;
-  return '<div class="workflow-guide" aria-label="ขั้นตอนการตัดสินใจ"><span class="flow-stage current"><b>01</b> อ่าน Situation</span><span class="flow-divider">›</span><span class="flow-stage '+(selectedChp?'current':'')+'"><b>02</b> เลือก CHP Deck</span><span class="flow-divider">›</span><span class="flow-stage '+(placed?'current':'')+'"><b>03</b> วาง Action <small>'+placed+' ใบ</small></span><span class="flow-divider">›</span><span class="flow-stage">'+(state.me.ready_to_lock?'<span class="flow-check">✓</span>':'<b>04</b>')+' Ready to Lock</span></div>';
+  return '<div class="workflow-guide" aria-label="ขั้นตอนการตัดสินใจ"><span class="flow-stage current"><b>01</b> Situation</span><span class="flow-divider">›</span><span class="flow-stage '+(selectedChp?'current':'')+'"><b>02</b> Select CHP</span><span class="flow-divider">›</span><span class="flow-stage '+(placed?'current':'')+'"><b>03</b> Place Cards <small>'+placed+' ใบ</small></span><span class="flow-divider">›</span><span class="flow-stage">'+(state.me.ready_to_lock?'<span class="flow-check">✓</span>':'<b>04</b>')+' Ready to Lock</span></div>';
 }
 
 function decksHtml(){
@@ -347,17 +347,17 @@ function decksHtml(){
   const paused=!!state.room.paused_at;
   const bySite={HO:[],PPD:[],NKL:[]};
   placements.forEach(p=>(bySite[p.site]??=[]).push(p));
-  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">TEAM DECISION BOARD</span><h2>Shared Timeline</h2><p>ลาก Action มาวางที่ Site หรือใช้ปุ่ม “วาง” บน Card</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
+  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">SHARED DECISION SPACE</span><h2>Shared Timeline</h2><p>ลากการ์ดไปยัง Site ที่ต้องการ หรือกด PLACE CARD</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
     const groups={};
     bySite[site].forEach(p=>(groups[p.chp_code]??=[]).push(p));
     const groupHtml=Object.entries(groups).sort(([a],[b])=>chpSort(a,b)).map(([chp,cards])=>{
       cards.sort((a,b)=>a.position-b.position);
       const deckId=cards[0]?.deck_id;
-      return '<div class="timeline-chp"><div class="timeline-chp-head"><b>'+esc(chp)+'</b><span>'+cards.length+' Actions</span></div><div class="timeline-cards" data-timeline-deck="'+deckId+'">'+cards.map((p,i)=>'<div class="placed-card" draggable="'+(!paused)+'" data-place="'+p.id+'" data-deck="'+p.deck_id+'"><span class="seq">'+(i+1)+'</span><div class="placed-card-copy"><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" aria-label="เลื่อน Action ขึ้น" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+((paused||i===0)?'disabled':'')+'>↑</button><button class="icon-btn" aria-label="เลื่อน Action ลง" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+((paused||i===cards.length-1)?'disabled':'')+'>↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" aria-label="นำ Action ออกจาก Timeline" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join('')+'</div></div>';
+      return '<div class="timeline-chp"><div class="timeline-chp-head"><b>'+esc(chp)+'</b><span>'+cards.length+' Actions</span></div><div class="timeline-cards" data-timeline-deck="'+deckId+'">'+cards.map((p,i)=>'<div class="placed-card" draggable="'+(!paused)+'" data-place="'+p.id+'" data-deck="'+p.deck_id+'"><span class="seq">'+(i+1)+'</span><div class="placed-card-copy"><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" aria-label="เลื่อน Action ขึ้น" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+((paused||i===0)?'disabled':'')+'>↑</button><button class="icon-btn" aria-label="เลื่อน Action ลง" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+((paused||i===cards.length-1)?'disabled':'')+'>↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" aria-label="นำการ์ดออกจาก Timeline" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join('')+'</div></div>';
     }).join('');
     const n=bySite[site].length;
-    return '<div class="site-col timeline-site '+(roleSite(state.me.role_key)===site?'site-owned':'')+'"><div class="site-head"><span><span class="site-marker"></span><b>'+site+'</b></span><span class="site-count">'+n+' ACTIONS</span></div><div class="site-dropzone" role="region" aria-label="Drop Action at '+site+'" data-site-drop="'+site+'">'+(groupHtml||'<div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วาง Action ที่ '+site+'</b><small>ลาก Card ลงพื้นที่นี้</small></div>')+'</div></div>';
-  }).join('')+'</div><div class="decision-footer"><span class="decision-hint-dot"></span>การจัดลำดับ Actions ภายใน CHP เดียวกันมีผลต่อผลลัพธ์</div></section>';
+    return '<div class="site-col timeline-site '+(roleSite(state.me.role_key)===site?'site-owned':'')+'"><div class="site-head"><span><span class="site-marker"></span><b>'+site+'</b></span><span class="site-count">'+n+' ACTIONS</span></div><div class="site-dropzone" role="region" aria-label="Drop Action at '+site+'" data-site-drop="'+site+'">'+(groupHtml||'<div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วางการ์ดที่ '+site+'</b><small>ลากการ์ดมาวางที่นี่</small></div>')+'</div></div>';
+  }).join('')+'</div><div class="decision-footer"><span class="decision-hint-dot"></span>ลำดับการ์ดภายใน CHP เดียวกันมีผลต่อคะแนน</div></section>';
 }
 
 function handHtml(){
@@ -366,17 +366,17 @@ function handHtml(){
   const role=state.me.role_key;
 
   if(!role){
-    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">ADMIN CONSOLE</span><h2>ไม่มี Private CHP Deck</h2><p>Admin Console คุม Session เท่านั้น — สลับ TEST VIEW ไป Game Role เพื่อดู CHP Deck ของผู้เล่นคนนั้น</p></div></div><div class="hand-empty-state"><span>ADMIN</span><b>เลือก CMC / CMD / CMT เพื่อทดสอบการเล่น</b></div></section>';
+    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">ADMIN CONSOLE</span><h2>NO PLAYER DECK</h2><p>Admin Console ใช้ควบคุมห้อง เลือก TEST VIEW เพื่อทดลองในมุมของแต่ละ Role</p></div></div><div class="hand-empty-state"><span>ADMIN</span><b>เลือก Role ใน TEST VIEW เพื่อเริ่มทดลอง</b></div></section>';
   }
 
   const chps=ownedChps();
-  const deckSwitch='<div class="deck-library-label"><b>CHOOSE CHP</b><small>สลับ Deck ได้ทันที</small></div><div class="private-deck-grid" role="group" aria-label="CHP Decks ของผู้เล่น">'+chps.map(chp=>{
+  const deckSwitch='<div class="deck-library-label"><b>SELECT CHP DECK</b><small>สลับ Deck ได้ตลอดเวลา</small></div><div class="private-deck-grid" role="group" aria-label="CHP Decks ของผู้เล่น">'+chps.map(chp=>{
     const active=selectedChp===chp;
     return '<button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span>'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>';
   }).join('')+'</div>';
-  const header='<div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>CHP Deck ส่วนตัว</h2><p>'+esc(ROLE_LABEL[role])+' · '+hand.length+' Actions ที่รับผิดชอบ</p></div></div><span class="badge privacy-badge">PRIVATE</span></div>';
+  const header='<div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>My CHP Decks</h2><p>'+esc(ROLE_LABEL[role])+' · '+hand.length+' การ์ดใน Role นี้</p></div></div><span class="badge privacy-badge">PRIVATE</span></div>';
   if(!selectedChp){
-    return '<section class="panel hand private-decks" id="privateDeck">'+header+deckSwitch+'<div class="hand-empty-state compact"><span>STEP 02</span><b>เลือก CHP Deck เพื่อดู Action ที่รับผิดชอบ</b><small>คลิก Deck ด้านบนเพื่อเปิด Action Cards</small></div></section>';
+    return '<section class="panel hand private-decks" id="privateDeck">'+header+deckSwitch+'<div class="hand-empty-state compact"><span>STEP 02</span><b>Select CHP เพื่อดู Action ที่รับผิดชอบ</b><small>เลือก Deck ด้านบนเพื่อดู Action Cards</small></div></section>';
   }
 
   const cards=hand.filter(c=>c.chp_code===selectedChp);
@@ -386,8 +386,8 @@ function handHtml(){
     const usedSites=new Set(active.filter(p=>p.card_key===card.card_key).map(p=>p.site));
     const available=targets.filter(site=>!usedSites.has(site));
     const fullyUsed=available.length===0;
-    const actionLabel=available.length>1?'เลือก Site':'วาง';
-    const placementNote=targets.length>1&&usedSites.size?'<small class="card-placement-note">ลงแล้ว: '+[...usedSites].join(', ')+'</small>':'';
+    const actionLabel=available.length>1?'SELECT SITE':'PLACE CARD';
+    const placementNote=targets.length>1&&usedSites.size?'<small class="card-placement-note">USED IN: '+[...usedSites].join(', ')+'</small>':'';
     return '<article class="action-card '+(fullyUsed?'used':'')+(paused?' paused':'')+(selectedCard===card.card_key?' selected':'')+'" draggable="'+(!fullyUsed&&!paused)+'" data-card="'+esc(card.card_key)+'"><div class="card-top"><span>'+esc(card.chp_code)+'</span><strong>฿'+money(card.cash_cost)+'</strong></div><h3>'+esc(card.title)+'</h3><p>'+esc(card.detail).replace(/\n/g,'<br>')+'</p><footer><span>'+esc(card.role)+'</span><div class="card-actions">'+placementNote+(fullyUsed?'<span class="used-label">USED</span>':'<button class="card-place-btn" data-quick-place="'+esc(card.card_key)+'" '+(paused?'disabled':'')+'>'+actionLabel+'</button>')+'</div></footer></article>';
   };
 
@@ -395,13 +395,13 @@ function handHtml(){
   if(role==='CMC'){
     const ho=cards.filter(c=>cardSiteType(c)==='HO');
     const fac=cards.filter(c=>cardSiteType(c)==='Factory');
-    body=(ho.length?'<div class="private-card-section"><div class="private-card-section-title">HO ACTIONS</div><div class="hand-grid">'+ho.map(cardHtml).join('')+'</div></div>':'')+
-         (fac.length?'<div class="private-card-section"><div class="private-card-section-title">FACTORY ACTIONS · PPD / NKL</div><div class="hand-grid">'+fac.map(cardHtml).join('')+'</div></div>':'');
+    body=(ho.length?'<div class="private-card-section"><div class="private-card-section-title">HO CARDS</div><div class="hand-grid">'+ho.map(cardHtml).join('')+'</div></div>':'')+
+         (fac.length?'<div class="private-card-section"><div class="private-card-section-title">FACTORY CARDS · PPD / NKL</div><div class="hand-grid">'+fac.map(cardHtml).join('')+'</div></div>':'');
   }else{
     body='<div class="hand-grid">'+cards.map(cardHtml).join('')+'</div>';
   }
 
-  return '<section class="panel hand private-decks cards-reveal" id="privateDeck">'+header+deckSwitch+'<div class="deck-detail"><div class="deck-detail-head"><div><span class="eyebrow">DECK OPEN</span><h3>'+esc(selectedChp)+'</h3><p>ลาก Action Card ไปยัง Shared Timeline ด้านขวา หรือกดปุ่ม “วาง”</p></div><span class="deck-active-indicator">ACTIVE</span></div>'+body+'</div></section>';
+  return '<section class="panel hand private-decks cards-reveal" id="privateDeck">'+header+deckSwitch+'<div class="deck-detail"><div class="deck-detail-head"><div><span class="eyebrow">ACTIVE DECK</span><h3>'+esc(selectedChp)+'</h3><p>ลากการ์ดไปยัง Shared Timeline หรือกด PLACE CARD</p></div><span class="deck-active-indicator">ACTIVE</span></div>'+body+'</div></section>';
 }
 
 function teamHtml(){
@@ -412,21 +412,21 @@ function teamHtml(){
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
   const canClaimAdmin=!admin&&(!currentAdmin||offlineAdmin);
   const soloQuickTest=admin&&state.room.is_test_mode&&session?.soloSessions?.length===7
-    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · QUICK CONTROL</b></div><p>ควบคุม Virtual Roles ทั้ง 7 จากเครื่องเดียว โดยไม่ต้องสลับ Role เพื่อกด Ready</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>เปิด Twist ตอนนี้ (ถ้ามี)</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ All Ready · จบรอบ '+state.room.current_round+'</button><small>ใช้เฉพาะห้อง Solo Test · คิดคะแนนจาก Actions ที่วางจริง</small></div>'
+    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · ROUND CONTROLS</b></div><p>กด All Ready เพื่อจบรอบแทน Virtual Roles ทั้ง 7 โดยไม่ต้องสลับ Role</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>REVEAL TWIST</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ ALL READY · END ROUND '+state.room.current_round+'</button><small>เฉพาะ Solo Test · คิดคะแนนจากการ์ดที่วางจริง</small></div>'
     :'';
-  const adminPanel=admin?'<div class="admin-panel"><b>Admin Control</b><div class="admin-actions">'+
+  const adminPanel=admin?'<div class="admin-panel"><b>ADMIN CONTROLS</b><div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
     '<button id="extendBtn" class="btn small">+1 min</button>'+
-    '<button id="lateJoinBtn" class="btn small">เปิด Join 5 นาที</button>'+
-    '<button id="closeRoomBtn" class="btn small danger-btn">ปิดห้อง</button></div>'+
-    (waiting.length?'<div class="recovery-box"><small>Role Recovery</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">รับช่วง Role</button></div>':'')+
-    '</div>':canClaimAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">'+(offlineAdmin?'Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้':'ห้องนี้ไม่มี Admin ที่ Active — สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้')+'</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
-  const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ Ready แล้ว · กดเพื่อยกเลิก':'Ready to Lock')+'</button><p class="muted small-text">ตำแหน่งจะ Lock เมื่อครบทั้ง 7 Role หรือหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>ไม่ถูกนับเป็น 1 ใน 7 Role และไม่ต้องกด Ready</span></div>';
-  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+soloQuickTest+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
+    '<button id="lateJoinBtn" class="btn small">OPEN JOIN · 5 MIN</button>'+
+    '<button id="closeRoomBtn" class="btn small danger-btn">CLOSE ROOM</button></div>'+
+    (waiting.length?'<div class="recovery-box"><small>ROLE RECOVERY</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">REASSIGN ROLE</button></div>':'')+
+    '</div>':canClaimAdmin?'<div class="admin-panel"><b>ADMIN RECOVERY</b><p class="muted small-text">'+(offlineAdmin?'หาก Admin เดิม Offline เกิน 90 วินาที ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้':'ห้องนี้ไม่มี Admin ที่ใช้งานอยู่ ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้')+'</p><button id="claimAdminBtn" class="btn full">TAKE ADMIN CONTROL</button></div>':'';
+  const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ READY · UNDO':'Ready to Lock')+'</button><p class="muted small-text">ระบบจะ Lock รอบเมื่อ Ready ครบ 7 Role หรือเมื่อหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>Admin ไม่ถูกนับเป็นผู้เล่นทั้ง 7 Role และไม่ต้องกด Ready</span></div>';
+  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+soloQuickTest+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
 function game(){
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
-  const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">ออก</button>';
+  const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">EXIT</button>';
   shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+workflowHtml()+storyHtml()+'<div class="play-workspace"><div class="play-hand-col">'+handHtml()+'</div><div class="play-timeline-col">'+decksHtml()+'</div></div></div>'+teamHtml()+'</div></main>',extra);
 
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
@@ -544,7 +544,7 @@ function openSitePicker(cardKey,sites,anchor,x=null,y=null){
   document.querySelector('.site-choice-menu')?.remove();
   const menu=document.createElement('div');
   menu.className='site-choice-menu';
-  menu.innerHTML='<small>วาง Action ที่ Site</small>'+sites.map(site=>'<button data-site-choice="'+site+'">'+site+'</button>').join('');
+  menu.innerHTML='<small>วางการ์ดที่ Site</small>'+sites.map(site=>'<button data-site-choice="'+site+'">'+site+'</button>').join('');
   document.body.appendChild(menu);
 
   if(x!==null&&y!==null){
@@ -660,10 +660,10 @@ async function extendRound(btn){
   });
 }
 async function openLateJoin(btn){
-  return withButtonBusy(btn,'กำลังเปิด Join…',async()=>{
+  return withButtonBusy(btn,'กำลังเปิดรับผู้เล่น…',async()=>{
     try{
       await rpc('bcp_web_open_late_join',{p_room_id:state.room.id,p_session_token:adminToken(),p_minutes:5});
-      toast('เปิดรับผู้เล่นทดแทน 5 นาที','success');
+      toast('เปิดรับผู้เล่นทดแทนอีก 5 นาที','success');
       await refresh();
     }catch(e){toast(errText(e),'error');}
   });
@@ -674,7 +674,7 @@ async function recoverRole(btn){
   return withButtonBusy(btn,'กำลังส่งต่อ…',async()=>{
     try{
       await rpc('bcp_web_reassign_role',{p_room_id:state.room.id,p_session_token:adminToken(),p_member_id:member,p_role_key:role});
-      toast('ส่งต่อ Role แล้ว','success');
+      toast('ส่งต่อ Role สำเร็จ','success');
       await refresh();
     }catch(e){toast(errText(e),'error');}
   });
@@ -692,7 +692,7 @@ async function soloRevealTwistNow(btn){
       }else if(result?.already){
         toast('Twist ถูกเปิดอยู่แล้ว','success');
       }else{
-        toast('เปิด Twist สำหรับ Solo Test แล้ว — ปรับ Action ก่อนจบรอบได้','success');
+        toast('เปิด Twist แล้ว ตรวจและปรับการ์ดก่อนจบรอบได้','success');
       }
       await refresh();
     }catch(e){toast(errText(e),'error');}
@@ -714,7 +714,7 @@ async function soloAllReadyAndEndRound(btn){
     'หาก Round มี Twist ต้องเปิด Twist ก่อนเพื่อให้ได้ทดสอบการตอบสนองครบ'
   ].join('\n');
   if(!confirm(msg))return;
-  return withButtonBusy(btn,'กำลัง All Ready และคำนวณ…',async()=>{
+  return withButtonBusy(btn,'กำลัง Lock รอบและคำนวณคะแนน…',async()=>{
     try{
       const result=await rpc('bcp_web_solo_all_ready_and_lock',{
         p_room_id:state.room.id,p_session_token:adminToken()
@@ -750,7 +750,7 @@ function consequenceHtml(){
   const r=(state?.round_results||[]).at(-1);
   if(!r||sessionStorage.getItem(consequenceKey(r.round_no)))return '';
   const next=state.room.status==='playing';
-  return '<section class="round-consequence panel" aria-label="Round consequence"><div class="consequence-heading"><span class="eyebrow">ROUND '+r.round_no+' · CONSEQUENCE</span><h2>'+esc(r.bc_after<=0?'MISSION FAILED':'ผลการตัดสินใจของทีม')+'</h2></div><div class="consequence-metrics"><div><small>BC LOSS</small><strong>−'+Number(r.bc_loss)+'</strong></div><div><small>CASH USED</small><strong>฿'+money(r.cash_used_round)+'</strong></div><div><small>BC REMAINING</small><strong>'+Number(r.bc_after)+'</strong></div></div><p class="consequence-outcome">'+esc(r.outcome||'')+'</p><p class="consequence-hint">'+(next?'รอบถัดไปเริ่มนับเวลาแล้ว · กดต่อเพื่อกลับไปตัดสินใจ':'จบ Simulation · ดูรายละเอียดคำตอบใน Debrief')+'</p>'+(next?'<button id="consequenceDone" class="btn primary">ไปที่ Round '+state.room.current_round+' →</button>':'')+'</section>';
+  return '<section class="round-consequence panel" aria-label="Round consequence"><div class="consequence-heading"><span class="eyebrow">ROUND '+r.round_no+' · RESULT</span><h2>'+esc(r.bc_after<=0?'MISSION FAILED':'ROUND COMPLETE')+'</h2></div><div class="consequence-metrics"><div><small>BC LOSS</small><strong>−'+Number(r.bc_loss)+'</strong></div><div><small>CASH USED</small><strong>฿'+money(r.cash_used_round)+'</strong></div><div><small>BC REMAINING</small><strong>'+Number(r.bc_after)+'</strong></div></div><p class="consequence-outcome">'+esc(r.outcome||'')+'</p><p class="consequence-hint">'+(next?'รอบถัดไปเริ่มนับเวลาแล้ว กด CONTINUE เพื่อกลับสู่เกม':'Simulation จบแล้ว ดูคำตอบและเหตุการณ์ย้อนหลังได้ใน Debrief')+'</p>'+(next?'<button id="consequenceDone" class="btn primary">CONTINUE · ROUND '+state.room.current_round+' →</button>':'')+'</section>';
 }
 function warnAtSeconds(sec){
   if(!state||!state.room||!state.room.id)return;
@@ -808,7 +808,7 @@ const PLAYTEST_METRICS=[
   {key:'rules_clarity',label:'ความชัดเจนของกติกา'},
   {key:'engagement',label:'ความสนุกและการมีส่วนร่วม'},
   {key:'bcp_realism',label:'ความสมจริงของสถานการณ์ BCP'},
-  {key:'game_balance',label:'ความสมดุลของ Cash / BC / Roles'},
+  {key:'game_balance',label:'ความสมดุลของทรัพยากรและบทบาท'},
   {key:'collaboration',label:'การสื่อสารและการทำงานร่วมกัน'}
 ];
 
@@ -841,15 +841,15 @@ function replayEventLabel(e,catalog,members){
   const card=catalog.get(p.card_key);
   const title=card?.title||p.card_key||'';
   const action={
-    action_played:'วาง Action',
-    action_removed:'นำ Action ออก',
-    deck_reordered:'เปลี่ยนลำดับ Action',
-    round_locked:'สรุป Round',
-    round_started:'เริ่ม Round',
-    twist_revealed:'Twist ปรากฏ',
+    action_played:'วางการ์ด',
+    action_removed:'นำการ์ดออก',
+    deck_reordered:'จัดลำดับการ์ด',
+    round_locked:'จบรอบ',
+    round_started:'เริ่มรอบ',
+    twist_revealed:'เปิด Twist',
     member_joined:'ผู้เล่นเข้าห้อง',
     role_assigned:'กำหนด Role',
-    ready_changed:'เปลี่ยน Ready',
+    ready_changed:'เปลี่ยนสถานะ Ready',
     game_started:'เริ่ม Simulation',
     game_paused:'Pause',
     game_resumed:'Resume'
@@ -861,9 +861,9 @@ function replayEventLabel(e,catalog,members){
 function playtestFormHtml(canSubmit){
   if(!canSubmit)return '<p class="muted">สลับจาก Admin Console ไปยัง TEST ROLE เพื่อส่งผลประเมินในมุมผู้เล่นได้</p>';
   const metrics=PLAYTEST_METRICS.map((m,i)=>
-    '<label class="playtest-metric"><span>'+esc(m.label)+'</span><select class="select" data-feedback="'+m.key+'" required><option value="">เลือก 1–5</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+' · '+(n===1?'น้อยที่สุด':n===5?'มากที่สุด':'')+'</option>').join('')+'</select></label>'
+    '<label class="playtest-metric"><span>'+esc(m.label)+'</span><select class="select" data-feedback="'+m.key+'" required><option value="">เลือกคะแนน</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+' · '+(n===1?'น้อยที่สุด':n===5?'มากที่สุด':'')+'</option>').join('')+'</select></label>'
   ).join('');
-  return '<div class="playtest-intro">ให้คะแนน 1 = น้อยที่สุด และ 5 = มากที่สุด เพื่อประเมินคุณภาพต้นแบบเกม ไม่ใช่คะแนนผู้เล่น</div><div class="playtest-metrics">'+metrics+'</div><label class="playtest-comment">จุดที่เข้าใจยากหรือไม่สมเหตุผล<textarea id="feedbackConfusing" maxlength="1500" rows="3" placeholder="เช่น กติกา Action, ลำดับ, บทบาท หรือ Scenario"></textarea></label><label class="playtest-comment">สิ่งที่อยากให้ปรับก่อนทำ Board Game จริง<textarea id="feedbackSuggestion" maxlength="1500" rows="3" placeholder="ข้อเสนอแนะเพิ่มเติม"></textarea></label><button id="savePlaytestFeedback" class="btn primary">บันทึกผลประเมิน Playtest</button><p id="feedbackSaveStatus" role="status" aria-live="polite" class="muted small-text"></p>';
+  return '<div class="playtest-intro">ให้คะแนน 1 = น้อยที่สุด และ 5 = มากที่สุด เพื่อประเมินคุณภาพต้นแบบเกม ไม่ใช่คะแนนผู้เล่น</div><div class="playtest-metrics">'+metrics+'</div><label class="playtest-comment">จุดที่เข้าใจยากหรือไม่สมเหตุผล<textarea id="feedbackConfusing" maxlength="1500" rows="3" placeholder="เช่น กติกา Action, ลำดับ, บทบาท หรือ Scenario"></textarea></label><label class="playtest-comment">สิ่งที่อยากให้ปรับก่อนทำ Board Game จริง<textarea id="feedbackSuggestion" maxlength="1500" rows="3" placeholder="ข้อเสนอแนะเพิ่มเติม"></textarea></label><button id="savePlaytestFeedback" class="btn primary">SAVE EVALUATION</button><p id="feedbackSaveStatus" role="status" aria-live="polite" class="muted small-text"></p>';
 }
 function feedbackStatsHtml(stats){
   if(!stats)return '<p class="muted">ยังอ่านภาพรวมการประเมินไม่ได้</p>';
@@ -893,7 +893,7 @@ async function savePlaytestFeedback(btn){
         p_confusing_point:$('#feedbackConfusing')?.value||'',
         p_suggested_improvement:$('#feedbackSuggestion')?.value||''
       });
-      toast('บันทึกผลประเมิน Playtest แล้ว','success');
+      toast('SAVE EVALUATION แล้ว','success');
       const stats=await rpc('bcp_web_get_feedback_stats',{p_room_id:state.room.id,p_session_token:session.token});
       const zone=$('#feedbackResults');
       if(zone)zone.innerHTML=feedbackStatsHtml(stats);
@@ -904,7 +904,7 @@ async function savePlaytestFeedback(btn){
 
 async function debrief(){
   stopRealtime();
-  shell('<main class="page"><section class="panel" style="padding:26px"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief & Replay</h1><p>กำลังโหลดข้อมูลการตัดสินใจจริง…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
+  shell('<main class="page"><section class="panel" style="padding:26px"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief & Replay</h1><p>กำลังโหลด Debrief…</p></section></main>','<button id="leaveBtn" class="btn small ghost">EXIT</button>');
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   try{
     const [d,feedback]=await Promise.all([
@@ -936,25 +936,25 @@ async function debrief(){
         const missing=new Set(s.missing_cards||[]);
         const wasted=new Set(s.wasted_cards||[]);
         const placed=actual.filter(a=>a.site===s.site&&a.chp_code===s.chp_code).sort((a,b)=>a.position-b.position);
-        const expectedRows=required.map(a=>'<div class="compare-line"><b>#'+a.seq+'</b><span>'+esc(a.title)+'</span><small>'+esc(a.role)+'</small></div>').join('')||'<p class="muted">CHP นี้ไม่มี Action ที่ต้องลงตาม Source</p>';
+        const expectedRows=required.map(a=>'<div class="compare-line"><b>#'+a.seq+'</b><span>'+esc(a.title)+'</span><small>'+esc(a.role)+'</small></div>').join('')||'<p class="muted">CHP นี้ไม่มี Action ที่ต้องลงตามข้อมูลต้นฉบับ</p>';
         const actualRows=placed.map((p,i)=>{
           const info=catalog.get(p.card_key)||{};
           const label=missing.has(p.card_key)?'MISSING':wasted.has(p.card_key)?'WASTED':!expectedIds.has(p.card_key)?'EXTRA':'PLAYED';
           const actor=members.get(p.actor_member_id);
           return '<div class="compare-line"><b>#'+(i+1)+'</b><span>'+esc(info.title||p.card_key)+'<small>'+esc(actor?.display_name||'Unknown')+' · '+esc(p.created_at?new Date(p.created_at).toLocaleTimeString('th-TH'):'')+'</small></span><em class="audit-tag '+label.toLowerCase()+'">'+label+'</em></div>';
-        }).join('')||'<p class="muted">ไม่ได้วาง Action</p>';
+        }).join('')||'<p class="muted">ไม่ได้วางการ์ด</p>';
         const missingRows=[...missing].filter(k=>!placed.some(p=>p.card_key===k)).map(k=>'<div class="audit-missing">ขาด: '+esc(catalog.get(k)?.title||k)+'</div>').join('');
-        return '<details class="chp-audit"><summary><b>'+esc(s.site)+' · '+esc(s.chp_code)+' · Level '+Number(s.actual_level)+'</b><span>BC −'+Number(s.chp_loss||0)+' · '+Number(s.response_cards||0)+'/'+Number(s.expected_cards||0)+' Actions</span></summary><div class="compare-grid"><div><h4>EXPECTED / ลำดับที่ควรใช้</h4>'+expectedRows+'</div><div><h4>ACTUAL / ทีมวางจริง</h4>'+actualRows+missingRows+'</div></div></details>';
+        return '<details class="chp-audit"><summary><b>'+esc(s.site)+' · '+esc(s.chp_code)+' · Level '+Number(s.actual_level)+'</b><span>BC −'+Number(s.chp_loss||0)+' · '+Number(s.response_cards||0)+'/'+Number(s.expected_cards||0)+' Actions</span></summary><div class="compare-grid"><div><h4>EXPECTED ACTIONS</h4>'+expectedRows+'</div><div><h4>TEAM RESPONSE</h4>'+actualRows+missingRows+'</div></div></details>';
       }).join('');
       const extras=actual.filter(a=>!expected.some(s=>s.site===a.site&&s.chp_code===a.chp_code));
-      const extraHtml=extras.length?'<details class="chp-audit"><summary><b>EXTRA CHP / นอก Scenario</b><span>'+extras.length+' Actions</span></summary>'+extras.map(p=>'<div class="audit-missing">'+esc(p.site+' · '+p.chp_code+' · '+(catalog.get(p.card_key)?.title||p.card_key))+'</div>').join('')+'</details>':'';
-      return '<details class="debrief-round" '+(idx===0?'open':'')+'><summary><span>ROUND '+r.round_no+'</span><b>BC −'+r.summary.bc_loss+' · CASH ฿'+money(playedCost)+'</b></summary><div class="round-analysis"><p class="muted">Expected Action Cost ฿'+money(expectedCost)+' · Actual Cash Charged ฿'+money(playedCost)+' · ต่างกัน ฿'+money(playedCost-expectedCost)+' (ค่าใช้จ่ายต่ำกว่าไม่ได้แปลว่าเล่นถูก ถ้าขาด Action)</p>'+chps+extraHtml+'</div></details>';
+      const extraHtml=extras.length?'<details class="chp-audit"><summary><b>EXTRA CHP</b><span>'+extras.length+' Actions</span></summary>'+extras.map(p=>'<div class="audit-missing">'+esc(p.site+' · '+p.chp_code+' · '+(catalog.get(p.card_key)?.title||p.card_key))+'</div>').join('')+'</details>':'';
+      return '<details class="debrief-round" '+(idx===0?'open':'')+'><summary><span>ROUND '+r.round_no+'</span><b>BC −'+r.summary.bc_loss+' · CASH ฿'+money(playedCost)+'</b></summary><div class="round-analysis"><p class="muted">Required Cost ฿'+money(expectedCost)+' · Cash Spent ฿'+money(playedCost)+' · Difference ฿'+money(playedCost-expectedCost)+' (ใช้เงินน้อยกว่าไม่ได้แปลว่าตอบครบ หากยังขาดการ์ดที่จำเป็น)</p>'+chps+extraHtml+'</div></details>';
     }).join('');
     const events=(d.replay||[]).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-    const history='<details class="panel full-replay"><summary>Event Replay · '+events.length+' เหตุการณ์</summary><div class="replay-list">'+events.map(e=>replayEventLabel(e,catalog,members)).join('')+'</div></details>';
+    const history='<details class="panel full-replay"><summary>EVENT REPLAY · '+events.length+' EVENTS</summary><div class="replay-list">'+events.map(e=>replayEventLabel(e,catalog,members)).join('')+'</div></details>';
     const headline=isDefeat?'MISSION FAILED · BC = 0':'SIMULATION COMPLETE';
-    const feedbackView='<section class="panel playtest-panel"><div class="panel-head"><div><span class="eyebrow">PLAYTEST INSTRUMENT</span><h2>ประเมินคุณภาพ Board Game ต้นแบบ</h2><p>5 มิติของการทดสอบ ก่อนออกแบบกิจกรรมจริง</p></div></div><div id="feedbackResults">'+feedbackStatsHtml(feedback)+'</div><div class="feedback-form">'+playtestFormHtml(!!state.me.role_key)+'</div></section>';
-    shell('<main class="page debrief-page">'+(consequence&&!sessionStorage.getItem(consequenceKey(consequence.round_no))?consequenceHtml():'')+'<section class="panel debrief-intro"><span class="eyebrow">'+esc(headline)+'</span><h1>Debrief & Decision Replay</h1><p>เทียบ Action ที่ควรใช้กับสิ่งที่ทีมตัดสินใจจริง เพื่อหาจุดปรับปรุงของเกม</p>'+totals+'<div class="result-grid">'+roundup+'</div></section><section class="panel debrief-analysis"><div class="panel-head"><div><h2>Expected vs Actual</h2><p>เฉลย CHP / Level / Missing / Wasted / Extra เปิดเฉพาะเมื่อ Simulation จบ</p></div></div>'+comparisons+'</section>'+history+feedbackView+'</main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
+    const feedbackView='<section class="panel playtest-panel"><div class="panel-head"><div><span class="eyebrow">PLAYTEST FEEDBACK</span><h2>Playtest Evaluation</h2><p>5 มิติของการทดสอบ ก่อนออกแบบกิจกรรมจริง</p></div></div><div id="feedbackResults">'+feedbackStatsHtml(feedback)+'</div><div class="feedback-form">'+playtestFormHtml(!!state.me.role_key)+'</div></section>';
+    shell('<main class="page debrief-page">'+(consequence&&!sessionStorage.getItem(consequenceKey(consequence.round_no))?consequenceHtml():'')+'<section class="panel debrief-intro"><span class="eyebrow">'+esc(headline)+'</span><h1>Decision Debrief</h1><p>เปรียบเทียบการ์ดที่ควรใช้กับการตัดสินใจจริง เพื่อค้นหาจุดปรับปรุงเกม</p>'+totals+'<div class="result-grid">'+roundup+'</div></section><section class="panel debrief-analysis"><div class="panel-head"><div><h2>Expected vs Actual</h2><p>เฉลย CHP, Level และการ์ดที่ขาดหรือใช้ผิด เปิดให้ดูหลังจบ Simulation เท่านั้น</p></div></div>'+comparisons+'</section>'+history+feedbackView+'</main>','<button id="leaveBtn" class="btn small ghost">EXIT</button>');
     $('#leaveBtn').onclick=e=>leave(e.currentTarget);
     if($('#savePlaytestFeedback'))$('#savePlaytestFeedback').onclick=e=>savePlaytestFeedback(e.currentTarget);
   }catch(e){
