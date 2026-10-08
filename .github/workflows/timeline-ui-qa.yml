@@ -1,0 +1,37 @@
+name: Timeline visual regression
+on:
+  push:
+    paths:
+      - styles.css
+      - app.js
+      - tests/**
+      - .github/workflows/timeline-ui-qa.yml
+  pull_request:
+    paths:
+      - styles.css
+      - app.js
+      - tests/**
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runner
+        run: npm install --no-save playwright@1.56.1
+      - name: Install browser
+        run: npx playwright install chromium --with-deps
+      - name: Verify timeline geometry across seven viewports
+        run: node tests/timeline-visual.cjs
+      - name: Preserve visual screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeline-visual-screenshots
+          path: tests/screenshots/
+          if-no-files-found: ignore
