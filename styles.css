@@ -2113,3 +2113,94 @@ body{
   }
   .play-timeline-col .placed-card-copy b{font-size:12px}
 }
+
+
+/* Admin-only solo test quick controls — never shown in human rooms */
+.solo-quick-test{
+  margin:13px 0 14px;
+  padding:15px;
+  border:1px solid rgba(41,70,155,.22);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(253,201,45,.22),transparent 55%),
+    linear-gradient(145deg,#f3f6ff,#fff);
+}
+.solo-tool-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--blue);
+}
+.solo-tool-heading b{
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.05em;
+  line-height:1.4;
+}
+.solo-tool-dot{
+  flex:none;
+  width:9px;height:9px;
+  border-radius:50%;
+  background:var(--yellow);
+  box-shadow:0 0 0 4px rgba(253,201,45,.22);
+}
+.solo-quick-test p{
+  margin:10px 0 13px;
+  color:#4d5a70;
+  font-size:13px;
+  line-height:1.55;
+}
+.solo-quick-test>.btn{
+  width:100%;
+  min-height:45px;
+  margin:0;
+  padding:9px 10px;
+  font-size:13px;
+  line-height:1.35;
+  font-weight:700;
+  white-space:normal;
+}
+.solo-quick-test>.btn+.btn{margin-top:9px}
+.solo-quick-test>.solo-twist-btn{
+  color:#29469b;
+  background:#fff;
+  border:1px solid rgba(41,70,155,.24);
+}
+.solo-quick-test>.solo-twist-btn:hover:not(:disabled){
+  color:#1b357b;
+  background:#edf3ff;
+}
+.solo-quick-test>.solo-all-ready-btn{
+  color:#fff;
+  background:var(--blue);
+  border-color:var(--blue);
+  box-shadow:0 6px 14px rgba(41,70,155,.15);
+}
+.solo-quick-test>.solo-all-ready-btn:hover:not(:disabled){background:#1d387f}
+.solo-quick-test>small{
+  display:block;
+  margin-top:10px;
+  color:#758199;
+  font-size:11px;
+  line-height:1.55;
+}
+@media(max-width:1199px){
+  .solo-quick-test{
+    max-width:640px;
+    padding:17px;
+    margin-top:14px;
+  }
+  .solo-quick-test>.btn{
+    max-width:100%;
+    min-height:46px;
+  }
+}
+@media(max-width:767px){
+  .solo-quick-test{
+    max-width:none;
+    margin-top:16px;
+    border-radius:16px;
+  }
+  .solo-quick-test>.btn{font-size:14px}
+  .solo-quick-test>small{font-size:12px}
+}
