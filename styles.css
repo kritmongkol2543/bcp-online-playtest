@@ -1860,3 +1860,256 @@ body{
   .site-count{font-size:10px}
   .dashboard-summary{border-radius:17px}
 }
+
+
+/* ===== UI STABILITY HOTFIX / BCP TIMELINE =====
+   ROOT CAUSE:
+   .site-columns is a vertical flex scroller; default flex-shrink:1 on
+   .site-col let HO shrink smaller than its rendered cards and overflow into
+   the PPD/NKL columns. Also an inherited mobile grid override forced the
+   action toolbar onto a wasteful extra row.
+   Fix box sizing, scrolling, toolbar geometry and state legibility at all
+   widths WITHOUT touching gameplay/backend rules.
+*/
+.game-layout,.play-workspace,.play-hand-col,.play-timeline-col,
+.decision,.site-columns,.site-col,.site-dropzone,.timeline-chp,
+.timeline-cards,.placed-card,.placed-card-copy{min-width:0}
+.play-timeline-col .decision{
+  min-height:0;
+  min-width:0;
+  overflow:hidden;
+}
+.play-timeline-col .site-columns{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  flex:1 1 auto;
+  min-width:0;
+  min-height:0;
+  gap:11px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  padding:2px 5px 3px 2px;
+}
+.play-timeline-col .site-col{
+  flex:0 0 auto;
+  align-self:stretch;
+  height:auto;
+  min-height:0;
+  max-height:none;
+  padding:10px;
+  border-radius:18px;
+  overflow:visible;
+}
+.play-timeline-col .site-head{
+  padding:4px 6px 9px;
+  gap:8px;
+}
+.play-timeline-col .site-head b{font-size:15px;line-height:1.4}
+.play-timeline-col .site-count{font-size:12px;white-space:nowrap}
+.play-timeline-col .site-dropzone{
+  display:block;
+  flex:none;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:76px;
+  height:auto;
+  max-height:min(400px,53vh);
+  padding:8px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border-radius:13px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(41,70,155,.3) transparent;
+}
+.play-timeline-col .timeline-chp{
+  display:block;
+  position:relative;
+  width:100%;
+  min-width:0;
+  margin-bottom:9px;
+  overflow:hidden;
+  border-radius:12px;
+}
+.play-timeline-col .timeline-chp:last-child{margin-bottom:0}
+.play-timeline-col .timeline-chp-head{
+  min-height:42px;
+  padding:10px 12px;
+  gap:8px;
+}
+.play-timeline-col .timeline-chp-head b{font-size:14px}
+.play-timeline-col .timeline-chp-head span{font-size:12px}
+.play-timeline-col .timeline-cards{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+  padding:7px;
+}
+.play-timeline-col .placed-card{
+  display:grid;
+  grid-template-columns:29px minmax(0,1fr) max-content;
+  grid-template-rows:auto;
+  column-gap:9px;
+  row-gap:0;
+  align-items:center;
+  width:100%;
+  height:auto;
+  min-height:62px;
+  margin:0;
+  padding:9px 10px;
+  overflow:hidden;
+  border:1px solid rgba(41,70,155,.12);
+  border-radius:12px;
+  background:#fff;
+}
+.play-timeline-col .placed-card>.seq{
+  grid-column:1;
+  grid-row:1;
+  justify-self:center;
+  width:28px;
+  height:28px;
+  font-size:12px;
+}
+.play-timeline-col .placed-card>.placed-card-copy{
+  grid-column:2;
+  grid-row:1;
+  min-width:0;
+  align-self:center;
+  overflow-wrap:anywhere;
+}
+.play-timeline-col .placed-card-copy b{
+  display:block;
+  font-size:13px;
+  line-height:1.45;
+  font-weight:600;
+  color:var(--bcp-ink);
+}
+.play-timeline-col .placed-card-copy small{
+  display:block;
+  font-size:11px;
+  line-height:1.35;
+  color:var(--bcp-muted);
+  margin-top:3px;
+}
+.play-timeline-col .placed-card>.placed-controls{
+  grid-column:3;
+  grid-row:1;
+  display:flex;
+  flex-wrap:nowrap;
+  justify-content:flex-end;
+  align-items:center;
+  gap:4px;
+  margin:0;
+  min-width:0;
+  align-self:center;
+}
+.play-timeline-col .placed-controls .icon-btn{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  min-width:32px;
+  min-height:32px;
+  padding:0;
+  border:1px solid #d9e1ee;
+  border-radius:10px;
+  background:#f9fbff;
+  color:#354b73;
+  font-size:17px;
+  line-height:1;
+  box-shadow:none;
+}
+.play-timeline-col .placed-controls .icon-btn:hover:not(:disabled){
+  border-color:var(--blue);
+  background:var(--blue-soft);
+  color:var(--blue);
+}
+.play-timeline-col .placed-controls .icon-btn[data-remove-action]{
+  background:#fff8f8;
+  color:#af323d;
+}
+.play-timeline-col .placed-controls .icon-btn[data-remove-action]:hover:not(:disabled){
+  background:#fff0f0;
+  border-color:#e5b5ba;
+}
+.play-timeline-col .placed-controls .icon-btn:disabled{
+  opacity:.28;
+  cursor:not-allowed;
+}
+.play-timeline-col .site-empty{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:74px;
+  padding:10px;
+}
+.play-timeline-col .site-empty b{
+  font-size:12px;
+  line-height:1.45;
+}
+.play-timeline-col .site-empty small{font-size:11px}
+.play-timeline-col .decision-footer{
+  padding:12px 4px 2px;
+  font-size:12px;
+  line-height:1.5;
+}
+/* Sticky page panels should never paint outside their own scrolling boxes. */
+.play-timeline-col,.team-panel{isolation:isolate}
+/* Action list: avoid nested layout overflow when title/detail are long */
+.action-card,.private-deck-card,.story-block,.team-panel .member{min-width:0}
+.action-card h3,.action-card p,.placed-card b,.story-block p{
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.card-actions{min-width:0;max-width:100%}
+.card-place-btn{white-space:nowrap}
+@media(max-width:1199px){
+  .play-timeline-col .site-dropzone{max-height:360px}
+}
+@media(max-width:767px){
+  .play-timeline-col .decision{
+    max-height:none;
+    overflow:visible;
+  }
+  .play-timeline-col .site-columns{
+    flex:initial;
+    max-height:none;
+    min-height:0;
+    overflow:visible;
+    padding:0;
+  }
+  .play-timeline-col .site-col{
+    flex:0 0 auto;
+    height:auto;
+    max-height:none;
+  }
+  .play-timeline-col .site-dropzone{
+    max-height:none;
+    overflow:visible;
+  }
+  .play-timeline-col .placed-card{
+    grid-template-columns:28px minmax(0,1fr) max-content;
+    min-height:64px;
+  }
+}
+@media(max-width:430px){
+  .play-timeline-col .site-dropzone{padding:5px}
+  .play-timeline-col .timeline-cards{padding:5px;gap:5px}
+  .play-timeline-col .placed-card{
+    padding:9px 7px;
+    grid-template-columns:25px minmax(0,1fr) max-content;
+    column-gap:7px;
+  }
+  .play-timeline-col .placed-controls{gap:2px}
+  .play-timeline-col .placed-controls .icon-btn{
+    width:28px;height:30px;min-width:28px;min-height:30px;
+    border-radius:8px;
+  }
+  .play-timeline-col .placed-card-copy b{font-size:12px}
+}
