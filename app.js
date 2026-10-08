@@ -135,7 +135,7 @@ function setConnectionState(next){
 }
 
 function topbar(extra=''){
-  return '<header class="topbar"><div class="brand"><div class="brand-lockup" aria-label="TCCC Learning Lab"><span class="brand-company"><i>T</i><b>CCC</b></span><span class="brand-lab">LEARNING LAB</span></div><div class="brand-product"><b>BCP PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+extra+'</div></header>';
+  return '<header class="topbar"><div class="brand"><img class="brand-logo" src="./assets/tccc-learning-lab.webp" alt="TCCC Learning Lab"><div class="brand-product"><b>BCP PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+extra+'</div></header>';
 }
 function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
 
