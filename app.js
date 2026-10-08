@@ -367,8 +367,13 @@ function handHtml(){
   }
 
   const chps=ownedChps();
+  const deckSwitch='<div class="deck-library-label"><b>CHOOSE CHP</b><small>สลับ Deck ได้ทันที</small></div><div class="private-deck-grid" role="group" aria-label="CHP Decks ของผู้เล่น">'+chps.map(chp=>{
+    const active=selectedChp===chp;
+    return '<button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span>'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>';
+  }).join('')+'</div>';
+  const header='<div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>CHP Deck ส่วนตัว</h2><p>'+esc(ROLE_LABEL[role])+' · '+hand.length+' Actions ที่รับผิดชอบ</p></div></div><span class="badge privacy-badge">PRIVATE</span></div>';
   if(!selectedChp){
-    return '<section class="panel hand private-decks"><div class="panel-head"><div><span class="eyebrow">PRIVATE CHP DECKS</span><h2>'+esc(ROLE_LABEL[role])+'</h2><p>Deck นี้เป็นของผู้เล่นคนนี้เท่านั้น และมีเฉพาะ Action ที่ Role นี้รับผิดชอบ</p></div></div><div class="private-deck-grid">'+chps.map(chp=>'<button class="private-deck-card" data-private-chp="'+esc(chp)+'"><b>'+esc(chp)+'</b><span>'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>').join('')+'</div><div class="hand-empty-state compact"><span>STEP 1</span><b>เลือก CHP Deck ที่ต้องการเปิดดู</b></div></section>';
+    return '<section class="panel hand private-decks" id="privateDeck">'+header+deckSwitch+'<div class="hand-empty-state compact"><span>STEP 02</span><b>เลือก CHP Deck เพื่อดู Action ที่รับผิดชอบ</b><small>คลิก Deck ด้านบนเพื่อเปิด Action Cards</small></div></section>';
   }
 
   const cards=hand.filter(c=>c.chp_code===selectedChp);
@@ -393,7 +398,7 @@ function handHtml(){
     body='<div class="hand-grid">'+cards.map(cardHtml).join('')+'</div>';
   }
 
-  return '<section class="panel hand cards-reveal"><div class="panel-head"><div><span class="eyebrow">PRIVATE CHP DECK</span><h2>'+esc(selectedChp)+' · '+esc(ROLE_LABEL[role])+'</h2><p>เลือก Action ที่ต้องใช้ แล้วลากไป Shared Timeline · คลิกขวาหรือปุ่ม “วาง” ใช้เป็นทางลัด</p></div><button id="backToDecks" class="btn small ghost">← CHP Decks</button></div>'+body+'</section>';
+  return '<section class="panel hand private-decks cards-reveal" id="privateDeck">'+header+deckSwitch+'<div class="deck-detail"><div class="deck-detail-head"><div><span class="eyebrow">DECK OPEN</span><h3>'+esc(selectedChp)+'</h3><p>ลาก Action Card ไปยัง Shared Timeline ด้านขวา หรือกดปุ่ม “วาง”</p></div><span class="deck-active-indicator">ACTIVE</span></div>'+body+'</div></section>';
 }
 
 function teamHtml(){
@@ -411,12 +416,12 @@ function teamHtml(){
     (waiting.length?'<div class="recovery-box"><small>Role Recovery</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">รับช่วง Role</button></div>':'')+
     '</div>':canClaimAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">'+(offlineAdmin?'Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้':'ห้องนี้ไม่มี Admin ที่ Active — สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้')+'</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
   const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ Ready แล้ว · กดเพื่อยกเลิก':'Ready to Lock')+'</button><p class="muted small-text">ตำแหน่งจะ Lock เมื่อครบทั้ง 7 Role หรือหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>ไม่ถูกนับเป็น 1 ใน 7 Role และไม่ต้องกด Ready</span></div>';
-  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+readyControl+adminPanel+'</aside>';
+  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
 function game(){
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">ออก</button>';
-  shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
+  shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+workflowHtml()+storyHtml()+'<div class="play-workspace"><div class="play-hand-col">'+handHtml()+'</div><div class="play-timeline-col">'+decksHtml()+'</div></div></div>'+teamHtml()+'</div></main>',extra);
 
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   const consequenceDone=$('#consequenceDone');
@@ -434,7 +439,7 @@ function game(){
     selectedChp=b.dataset.privateChp;
     selectedCard=null;
     game();
-    requestAnimationFrame(()=>document.querySelector('.hand')?.scrollIntoView({behavior:'smooth',block:'nearest'}));
+    requestAnimationFrame(()=>document.querySelector('.deck-detail')?.scrollIntoView({behavior:'smooth',block:'nearest'}));
   });
   if($('#backToDecks')) $('#backToDecks').onclick=()=>{selectedChp=null;selectedCard=null;game();};
 
@@ -509,7 +514,7 @@ function game(){
   });
 
   startClock();
-  showLatestResult();
+
 }
 
 function availableSitesForCard(card){
