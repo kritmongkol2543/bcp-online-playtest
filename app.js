@@ -731,18 +731,164 @@ function startClock(){
   };
   tick();clockTimer=setInterval(tick,500);
 }
+
+const PLAYTEST_METRICS=[
+  {key:'rules_clarity',label:'ความชัดเจนของกติกา'},
+  {key:'engagement',label:'ความสนุกและการมีส่วนร่วม'},
+  {key:'bcp_realism',label:'ความสมจริงของสถานการณ์ BCP'},
+  {key:'game_balance',label:'ความสมดุลของ Cash / BC / Roles'},
+  {key:'collaboration',label:'การสื่อสารและการทำงานร่วมกัน'}
+];
+
+function reconstructReplay(events){
+  const placements=new Map();
+  for(const event of [...(events||[])].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))){
+    const p=event.payload||{};
+    if(event.event_type==='action_played'&&p.placement_id){
+      const prior=placements.get(p.placement_id)||{};
+      placements.set(p.placement_id,{
+        ...prior,id:p.placement_id,site:p.site,chp_code:p.chp_code,
+        card_key:p.card_key,cash_cost:p.cash_cost,
+        actor_member_id:event.actor_member_id,
+        created_at:event.created_at,round_no:event.round_no,
+        position:prior.position||placements.size+1,
+        removed:false
+      });
+    }
+    if(event.event_type==='action_removed'&&p.placement_id&&placements.has(p.placement_id)){
+      placements.get(p.placement_id).removed=true;
+    }
+    if(event.event_type==='deck_reordered'&&Array.isArray(p.placement_ids)){
+      p.placement_ids.forEach((id,index)=>{if(placements.has(id))placements.get(id).position=index+1;});
+    }
+  }
+  return [...placements.values()].filter(x=>!x.removed);
+}
+function replayEventLabel(e,catalog,members){
+  const p=e.payload||{};
+  const card=catalog.get(p.card_key);
+  const title=card?.title||p.card_key||'';
+  const action={
+    action_played:'วาง Action',
+    action_removed:'นำ Action ออก',
+    deck_reordered:'เปลี่ยนลำดับ Action',
+    round_locked:'สรุป Round',
+    round_started:'เริ่ม Round',
+    twist_revealed:'Twist ปรากฏ',
+    member_joined:'ผู้เล่นเข้าห้อง',
+    role_assigned:'กำหนด Role',
+    ready_changed:'เปลี่ยน Ready',
+    game_started:'เริ่ม Simulation',
+    game_paused:'Pause',
+    game_resumed:'Resume'
+  }[e.event_type]||String(e.event_type||'Event').replaceAll('_',' ');
+  const who=members.get(e.actor_member_id);
+  const when=e.created_at?new Date(e.created_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'–';
+  return '<div class="replay-event"><time>'+esc(when)+'</time><b>'+esc(action)+'</b><span>'+esc([p.site,p.chp_code,title].filter(Boolean).join(' · '))+'</span><small>'+esc(who?.display_name||'System')+'</small></div>';
+}
+function playtestFormHtml(canSubmit){
+  if(!canSubmit)return '<p class="muted">สลับจาก Admin Console ไปยัง TEST ROLE เพื่อส่งผลประเมินในมุมผู้เล่นได้</p>';
+  const metrics=PLAYTEST_METRICS.map((m,i)=>
+    '<label class="playtest-metric"><span>'+esc(m.label)+'</span><select class="select" data-feedback="'+m.key+'" required><option value="">เลือก 1–5</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+' · '+(n===1?'น้อยที่สุด':n===5?'มากที่สุด':'')+'</option>').join('')+'</select></label>'
+  ).join('');
+  return '<div class="playtest-intro">ให้คะแนน 1 = น้อยที่สุด และ 5 = มากที่สุด เพื่อประเมินคุณภาพต้นแบบเกม ไม่ใช่คะแนนผู้เล่น</div><div class="playtest-metrics">'+metrics+'</div><label class="playtest-comment">จุดที่เข้าใจยากหรือไม่สมเหตุผล<textarea id="feedbackConfusing" maxlength="1500" rows="3" placeholder="เช่น กติกา Action, ลำดับ, บทบาท หรือ Scenario"></textarea></label><label class="playtest-comment">สิ่งที่อยากให้ปรับก่อนทำ Board Game จริง<textarea id="feedbackSuggestion" maxlength="1500" rows="3" placeholder="ข้อเสนอแนะเพิ่มเติม"></textarea></label><button id="savePlaytestFeedback" class="btn primary">บันทึกผลประเมิน Playtest</button><p id="feedbackSaveStatus" role="status" aria-live="polite" class="muted small-text"></p>';
+}
+function feedbackStatsHtml(stats){
+  if(!stats)return '<p class="muted">ยังอ่านภาพรวมการประเมินไม่ได้</p>';
+  const av=stats.averages||{};
+  const summary=PLAYTEST_METRICS.map(m=>'<div class="feedback-stat"><span>'+esc(m.label)+'</span><strong>'+ (av[m.key]==null?'—':Number(av[m.key]).toFixed(2))+' / 5</strong></div>').join('');
+  const notes=(stats.comments||[]).map(x=>
+    '<div class="feedback-note">'+(x.confusing_point?'<p><b>จุดที่ติดขัด:</b> '+esc(x.confusing_point)+'</p>':'')+
+    (x.suggested_improvement?'<p><b>เสนอให้ปรับ:</b> '+esc(x.suggested_improvement)+'</p>':'')+'</div>'
+  ).join('');
+  return '<div class="feedback-stats"><b>ผลประเมินจาก '+Number(stats.count||0)+' คน</b>'+summary+
+    (notes?'<details><summary>อ่านข้อเสนอแนะ</summary>'+notes+'</details>':'')+'</div>';
+}
+async function savePlaytestFeedback(btn){
+  const ratings={};
+  for(const m of PLAYTEST_METRICS){
+    const el=document.querySelector('[data-feedback="'+m.key+'"]');
+    if(!el?.value)return toast('กรุณาให้คะแนนครบทั้ง 5 ด้าน','error');
+    ratings[m.key]=Number(el.value);
+  }
+  return withButtonBusy(btn,'กำลังบันทึก…',async()=>{
+    try{
+      await rpc('bcp_web_submit_feedback',{
+        p_room_id:state.room.id,p_session_token:session.token,
+        p_rules_clarity:ratings.rules_clarity,p_engagement:ratings.engagement,
+        p_bcp_realism:ratings.bcp_realism,p_game_balance:ratings.game_balance,
+        p_collaboration:ratings.collaboration,
+        p_confusing_point:$('#feedbackConfusing')?.value||'',
+        p_suggested_improvement:$('#feedbackSuggestion')?.value||''
+      });
+      toast('บันทึกผลประเมิน Playtest แล้ว','success');
+      const stats=await rpc('bcp_web_get_feedback_stats',{p_room_id:state.room.id,p_session_token:session.token});
+      const zone=$('#feedbackResults');
+      if(zone)zone.innerHTML=feedbackStatsHtml(stats);
+      const text=$('#feedbackSaveStatus');if(text)text.textContent='บันทึกผลล่าสุดสำเร็จ สามารถแก้คะแนนแล้วบันทึกใหม่ได้';
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+
 async function debrief(){
   stopRealtime();
-  shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><p>กำลังโหลดผลสรุปและ Answer Key…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
+  shell('<main class="page"><section class="panel" style="padding:26px"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief & Replay</h1><p>กำลังโหลดข้อมูลการตัดสินใจจริง…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   try{
-    const d=await rpc('bcp_web_get_debrief',{p_room_id:state.room.id,p_session_token:session.token});
-    const rounds=d.rounds.map(r=>'<div class="result-card"><small>ROUND '+r.round_no+'</small><b>BC '+r.summary.bc_after+'</b><span>−'+r.summary.bc_loss+' BC · Cash ฿'+money(r.summary.cash_used_round)+'</span><p>'+esc(r.summary.outcome)+'</p></div>').join('');
-    const grouped={}; d.answer_key.forEach(a=>{const k='R'+a.round_no+' · '+a.site+' · '+a.chp_code+' · L'+a.level;(grouped[k]??=[]).push(a);});
-    const answer=Object.entries(grouped).map(([k,rows])=>'<div class="answer-group"><div class="answer-head">'+esc(k)+'</div>'+rows.map(x=>'<div class="answer-row"><span>#'+x.seq+'</span><span>'+esc(x.role)+'</span><b>'+esc(x.title)+'</b><span>฿'+money(x.cash_cost)+'</span></div>').join('')+'</div>').join('');
-    shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><div class="debrief-summary"><div><small>FINAL BC</small><b>'+d.room.business_continuity+'</b></div><div><small>CASH REMAINING</small><b>฿'+money(d.room.cash_remaining)+'</b></div></div><div class="result-grid">'+rounds+'</div></section><section class="panel"><div class="panel-head"><div><h2>Answer Key</h2><p>เปิดหลังจบ Round 4 เท่านั้น</p></div></div>'+answer+'</section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
+    const [d,feedback]=await Promise.all([
+      rpc('bcp_web_get_debrief',{p_room_id:state.room.id,p_session_token:session.token}),
+      rpc('bcp_web_get_feedback_stats',{p_room_id:state.room.id,p_session_token:session.token}).catch(()=>null)
+    ]);
+    const catalog=new Map((d.card_catalog||[]).map(c=>[c.card_key,c]));
+    const members=new Map((d.members||[]).map(m=>[m.id,m]));
+    const actualPlacements=reconstructReplay(d.replay||[]);
+    const isDefeat=d.room.business_continuity<=0;
+    const consequence=(state.round_results||[]).at(-1);
+    const totals='<div class="debrief-summary"><div><small>FINAL BUSINESS CONTINUITY</small><b>'+Number(d.room.business_continuity)+'</b></div><div><small>CASH REMAINING</small><b>฿'+money(d.room.cash_remaining)+'</b></div></div>';
+    const roundup=(d.rounds||[]).map(r=>
+      '<div class="result-card"><small>ROUND '+r.round_no+'</small><b>BC '+r.summary.bc_after+'</b><span>−'+r.summary.bc_loss+' BC · ใช้ Cash ฿'+money(r.summary.cash_used_round)+'</span><p>'+esc(r.summary.outcome||'')+'</p></div>'
+    ).join('');
+    const comparisons=(d.rounds||[]).map((r,idx)=>{
+      const expected=(r.scoring?.expected_chps||[]);
+      const reqKeys=new Set();
+      const expectedCost=expected.reduce((sum,s)=>{
+        const cards=(d.answer_key||[]).filter(a=>a.round_no===r.round_no&&a.site===s.site&&a.chp_code===s.chp_code&&a.source===s.source);
+        cards.forEach(a=>reqKeys.add(a.card_key+'@'+a.site));
+        return sum+cards.reduce((v,a)=>v+Number(a.cash_cost||0),0);
+      },0);
+      const actual=actualPlacements.filter(p=>p.round_no===r.round_no);
+      const playedCost=Number(r.summary.cash_used_round||0);
+      const chps=expected.map(s=>{
+        const required=(d.answer_key||[]).filter(a=>a.round_no===r.round_no&&a.site===s.site&&a.chp_code===s.chp_code&&a.source===s.source);
+        const expectedIds=new Set(required.map(a=>a.card_key));
+        const missing=new Set(s.missing_cards||[]);
+        const wasted=new Set(s.wasted_cards||[]);
+        const placed=actual.filter(a=>a.site===s.site&&a.chp_code===s.chp_code).sort((a,b)=>a.position-b.position);
+        const expectedRows=required.map(a=>'<div class="compare-line"><b>#'+a.seq+'</b><span>'+esc(a.title)+'</span><small>'+esc(a.role)+'</small></div>').join('')||'<p class="muted">CHP นี้ไม่มี Action ที่ต้องลงตาม Source</p>';
+        const actualRows=placed.map((p,i)=>{
+          const info=catalog.get(p.card_key)||{};
+          const label=missing.has(p.card_key)?'MISSING':wasted.has(p.card_key)?'WASTED':!expectedIds.has(p.card_key)?'EXTRA':'PLAYED';
+          const actor=members.get(p.actor_member_id);
+          return '<div class="compare-line"><b>#'+(i+1)+'</b><span>'+esc(info.title||p.card_key)+'<small>'+esc(actor?.display_name||'Unknown')+' · '+esc(p.created_at?new Date(p.created_at).toLocaleTimeString('th-TH'):'')+'</small></span><em class="audit-tag '+label.toLowerCase()+'">'+label+'</em></div>';
+        }).join('')||'<p class="muted">ไม่ได้วาง Action</p>';
+        const missingRows=[...missing].filter(k=>!placed.some(p=>p.card_key===k)).map(k=>'<div class="audit-missing">ขาด: '+esc(catalog.get(k)?.title||k)+'</div>').join('');
+        return '<details class="chp-audit"><summary><b>'+esc(s.site)+' · '+esc(s.chp_code)+' · Level '+Number(s.actual_level)+'</b><span>BC −'+Number(s.chp_loss||0)+' · '+Number(s.response_cards||0)+'/'+Number(s.expected_cards||0)+' Actions</span></summary><div class="compare-grid"><div><h4>EXPECTED / ลำดับที่ควรใช้</h4>'+expectedRows+'</div><div><h4>ACTUAL / ทีมวางจริง</h4>'+actualRows+missingRows+'</div></div></details>';
+      }).join('');
+      const extras=actual.filter(a=>!expected.some(s=>s.site===a.site&&s.chp_code===a.chp_code));
+      const extraHtml=extras.length?'<details class="chp-audit"><summary><b>EXTRA CHP / นอก Scenario</b><span>'+extras.length+' Actions</span></summary>'+extras.map(p=>'<div class="audit-missing">'+esc(p.site+' · '+p.chp_code+' · '+(catalog.get(p.card_key)?.title||p.card_key))+'</div>').join('')+'</details>':'';
+      return '<details class="debrief-round" '+(idx===0?'open':'')+'><summary><span>ROUND '+r.round_no+'</span><b>BC −'+r.summary.bc_loss+' · CASH ฿'+money(playedCost)+'</b></summary><div class="round-analysis"><p class="muted">Expected Action Cost ฿'+money(expectedCost)+' · Actual Cash Charged ฿'+money(playedCost)+' · ต่างกัน ฿'+money(playedCost-expectedCost)+' (ค่าใช้จ่ายต่ำกว่าไม่ได้แปลว่าเล่นถูก ถ้าขาด Action)</p>'+chps+extraHtml+'</div></details>';
+    }).join('');
+    const events=(d.replay||[]).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    const history='<details class="panel full-replay"><summary>Event Replay · '+events.length+' เหตุการณ์</summary><div class="replay-list">'+events.map(e=>replayEventLabel(e,catalog,members)).join('')+'</div></details>';
+    const headline=isDefeat?'MISSION FAILED · BC = 0':'SIMULATION COMPLETE';
+    const feedbackView='<section class="panel playtest-panel"><div class="panel-head"><div><span class="eyebrow">PLAYTEST INSTRUMENT</span><h2>ประเมินคุณภาพ Board Game ต้นแบบ</h2><p>5 มิติของการทดสอบ ก่อนออกแบบกิจกรรมจริง</p></div></div><div id="feedbackResults">'+feedbackStatsHtml(feedback)+'</div><div class="feedback-form">'+playtestFormHtml(!!state.me.role_key)+'</div></section>';
+    shell('<main class="page debrief-page">'+(consequence&&!sessionStorage.getItem(consequenceKey(consequence.round_no))?consequenceHtml():'')+'<section class="panel debrief-intro"><span class="eyebrow">'+esc(headline)+'</span><h1>Debrief & Decision Replay</h1><p>เทียบ Action ที่ควรใช้กับสิ่งที่ทีมตัดสินใจจริง เพื่อหาจุดปรับปรุงของเกม</p>'+totals+'<div class="result-grid">'+roundup+'</div></section><section class="panel debrief-analysis"><div class="panel-head"><div><h2>Expected vs Actual</h2><p>เฉลย CHP / Level / Missing / Wasted / Extra เปิดเฉพาะเมื่อ Simulation จบ</p></div></div>'+comparisons+'</section>'+history+feedbackView+'</main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
     $('#leaveBtn').onclick=e=>leave(e.currentTarget);
-  }catch(e){toast(errText(e),'error');}
+    if($('#savePlaytestFeedback'))$('#savePlaytestFeedback').onclick=e=>savePlaytestFeedback(e.currentTarget);
+  }catch(e){
+    toast('Debrief โหลดไม่สำเร็จ: '+errText(e),'error');
+    const p=document.querySelector('.page .panel p');if(p)p.textContent='โหลด Debrief ไม่สำเร็จ กรุณา Refresh หรือกลับเข้า Session ใหม่';
+  }
 }
 
 async function heartbeat(){
