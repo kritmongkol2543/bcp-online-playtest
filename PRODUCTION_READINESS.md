@@ -1,6 +1,6 @@
 # Production Readiness — BCP Online Playtest
 
-Last hardening pass: 2026-10-07
+Last hardening pass: 2026-10-08
 
 ## Readiness target
 
@@ -77,7 +77,7 @@ This avoids accidentally destroying a live room during a refresh or temporary co
 - Realtime exposes only `bcp_web_live_signals` (room UUID + revision).
 - Site source data originally contained headers such as `CHP-4 | Level 2`. Public state now strips those answer headers before the story reaches players.
 - CMC receives Big Story only; Site roles receive Big Story + sanitized Site Story.
-- Detailed scoring and the Answer Key remain unavailable until Round 4 completes.
+- Detailed scoring and the Answer Key remain unavailable until Simulation completes (normally Round 4, or early defeat at BC = 0).
 
 ## Automated regression coverage
 
@@ -156,3 +156,14 @@ Current play model no longer asks players to select a response Level.
 - No explicit Level penalty is asked from the player. Response adequacy is inferred from which Action Cards were actually chosen against the source-required Actions for the scenario's hidden actual Level.
 - Source CHP/Level remains hidden during play and is revealed only in the final Debrief.
 - Source cases that intentionally require zero Action Cards at a Level are handled as zero-loss when no Action is required.
+
+## Project-fit / playtest changes (2026-10-08)
+
+- **Authoritative loss:** BC = 0 marks the Simulation completed immediately, even if it were to happen before Round 4. Current default 100 BC and maximum 30 loss per round ordinarily make this possible only by Round 4.
+- **Round Consequence:** the next screen includes BC loss, Cash Used, BC Remaining, and Crisis Outcome, without revealing required Actions during gameplay. The game timer for the new round starts as soon as the previous round is scored; the panel explicitly discloses that timing. Server-side intermission/ready-to-resume is a possible later improvement but has not been implemented.
+- **Debrief & Replay:** after completion, an RPC provides scored CHP/Level, expected Action sequences, Missing/Wasted/Extra, actual placement/reorder/remove history with actor names, and cost comparison. The browser reconstructs active Action placement from the event log.
+- **Feedback:** role holders may submit 1–5 ratings for Rules Clarity, Engagement, BCP Realism, Balance, and Collaboration, plus optional comments, through token-authorized RPC. One record per member per room; resubmission updates that record. Direct table grants are revoked from anon and RLS is enabled.
+- **Timer:** client-side alerts at 60/30/10 seconds; no audiovisual warning is required.
+- **Solo UX:** virtual participant rows are labelled TEST rather than suggesting autonomous AI Bot behavior.
+- **Cash rule unchanged:** playing an Action debits Cash immediately; removing it does not refund Cash. Round Cash Used reporting now includes removed charged placements so it matches the debit ledger. Whether to move to reservation-and-commit is an unresolved game-rule decision.
+- **Testing:** 8/8 automated bot/lifecycle/operations regressions passed; an isolated disposable room verified BC=0 early terminal outcome and submission/aggregation of playtest feedback. Browser-rendered multi-device tests still required.
