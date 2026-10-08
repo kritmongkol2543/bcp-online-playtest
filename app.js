@@ -29,6 +29,7 @@ let selectedChp = null;
 let serverOffsetMs = 0;
 let connectionState = navigator.onLine ? 'connecting' : 'offline';
 let pendingRequests = 0;
+let clockActionPending=false;
 
 function saveSession(v){ session=v; v?localStorage.setItem(STORE,JSON.stringify(v)):localStorage.removeItem(STORE); }
 function requestStarted(){
@@ -243,7 +244,7 @@ function lobby(){
     const options='<option value="">— เลือกผู้เล่น —</option>'+members.map(m=>'<option value="'+m.id+'" '+(holder?.id===m.id?'selected':'')+'>'+esc(m.display_name)+(m.is_admin?' · Admin':'')+'</option>').join('');
     return '<div class="role-card"><div><b>'+ROLE_LABEL[r]+'</b><small>'+(holder?esc(holder.display_name):'ยังไม่กำหนด')+'</small></div>'+(state.me.is_admin?'<select data-role="'+r+'" class="select role-select">'+options+'</select>':'')+'</div>';
   }).join('');
-  const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'Waiting')+(m.is_admin?' · Admin':'')+(m.is_bot?' · BOT':'')+'</small></div><span class="presence-label">'+(m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
+  const memberList=members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+'"></span><div><b>'+esc(m.display_name)+'</b><small>'+esc(m.role_key?ROLE_LABEL[m.role_key]:'Waiting')+(m.is_admin?' · Admin':'')+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="presence-label">'+(m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('');
   const soloActive=!!session.soloSessions?.length;
   const currentAdmin=members.find(m=>m.is_admin&&!m.is_bot);
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
@@ -401,14 +402,16 @@ function teamHtml(){
     (waiting.length?'<div class="recovery-box"><small>Role Recovery</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">รับช่วง Role</button></div>':'')+
     '</div>':canClaimAdmin?'<div class="admin-panel"><b>Admin Recovery</b><p class="muted small-text">'+(offlineAdmin?'Admin เดิม Offline หากเกิน 90 วินาที สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้':'ห้องนี้ไม่มี Admin ที่ Active — สมาชิกที่ยัง Online สามารถรับสิทธิ์ดูแลห้องต่อได้')+'</p><button id="claimAdminBtn" class="btn full">รับสิทธิ์ Admin</button></div>':'';
   const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ Ready แล้ว · กดเพื่อยกเลิก':'Ready to Lock')+'</button><p class="muted small-text">ตำแหน่งจะ Lock เมื่อครบทั้ง 7 Role หรือหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>ไม่ถูกนับเป็น 1 ใน 7 Role และไม่ต้องกด Ready</span></div>';
-  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · BOT':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'BOT':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+readyControl+adminPanel+'</aside>';
+  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>Team Status</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+readyControl+adminPanel+'</aside>';
 }
 function game(){
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">ออก</button>';
-  shell('<main class="page">'+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
+  shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+storyHtml()+decksHtml()+handHtml()+'</div>'+teamHtml()+'</div></main>',extra);
 
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
+  const consequenceDone=$('#consequenceDone');
+  if(consequenceDone)consequenceDone.onclick=()=>{const r=(state.round_results||[]).at(-1);if(r)sessionStorage.setItem(consequenceKey(r.round_no),'1');game();};
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   if($('#readyBtn')) $('#readyBtn').onclick=e=>toggleReady(e.currentTarget);
   if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
@@ -670,6 +673,25 @@ async function toggleReady(btn){
   });
 }
 
+function consequenceKey(round){return 'bcp_consequence_'+state.room.id+'_'+round;}
+function consequenceHtml(){
+  const r=(state?.round_results||[]).at(-1);
+  if(!r||sessionStorage.getItem(consequenceKey(r.round_no)))return '';
+  const next=state.room.status==='playing';
+  return '<section class="round-consequence panel" aria-label="Round consequence"><div class="consequence-heading"><span class="eyebrow">ROUND '+r.round_no+' · CONSEQUENCE</span><h2>'+esc(r.bc_after<=0?'MISSION FAILED':'ผลการตัดสินใจของทีม')+'</h2></div><div class="consequence-metrics"><div><small>BC LOSS</small><strong>−'+Number(r.bc_loss)+'</strong></div><div><small>CASH USED</small><strong>฿'+money(r.cash_used_round)+'</strong></div><div><small>BC REMAINING</small><strong>'+Number(r.bc_after)+'</strong></div></div><p class="consequence-outcome">'+esc(r.outcome||'')+'</p><p class="consequence-hint">'+(next?'รอบถัดไปเริ่มนับเวลาแล้ว · กดต่อเพื่อกลับไปตัดสินใจ':'จบ Simulation · ดูรายละเอียดคำตอบใน Debrief')+'</p>'+(next?'<button id="consequenceDone" class="btn primary">ไปที่ Round '+state.room.current_round+' →</button>':'')+'</section>';
+}
+function warnAtSeconds(sec){
+  if(!state||!state.room||!state.room.id)return;
+  for(const threshold of [60,30,10]){
+    if(sec>threshold)continue;
+    const key='bcp_warning_'+state.room.id+'_'+state.room.current_round+'_'+threshold;
+    if(sessionStorage.getItem(key))continue;
+    sessionStorage.setItem(key,'1');
+    if(sec<threshold-2)continue;
+    toast(threshold+' วินาทีสุดท้าย · ตรวจ Action และกด Ready',threshold<=10?'error':'');
+    const el=$('#clock');if(el){el.classList.remove('clock-attention');void el.offsetWidth;el.classList.add('clock-attention');}
+  }
+}
 function startClock(){
   clearInterval(clockTimer);
   const tick=async()=>{
@@ -679,19 +701,36 @@ function startClock(){
       if(el){el.textContent='PAUSED';el.classList.add('warning');}
       return;
     }
-    const now=Date.now()+serverOffsetMs, end=new Date(state.room.round_ends_at).getTime(), reveal=state.room.twist_reveal_at?new Date(state.room.twist_reveal_at).getTime():null;
-    const sec=Math.max(0,Math.ceil((end-now)/1000)); if(el){el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');el.classList.toggle('danger',sec<=60);}
-    if(!busy&&!state.room.twist_revealed&&reveal&&now>=reveal&&sec>0){ try{busy=true;const r=await rpc('bcp_web_reveal_twist',{p_room_id:state.room.id,p_session_token:session.token});if(r?.revealed){toast('⚠ CRISIS UPDATE — Twist ถูกเปิดแล้ว','error');await refresh();}}catch{}finally{busy=false;} }
-    if(!busy&&sec<=0){ try{busy=true;await rpc('bcp_web_expire_round',{p_room_id:state.room.id,p_session_token:session.token});toast('หมดเวลา — ระบบ Lock Round แล้ว','error');await refresh();}catch{}finally{busy=false;} }
+    const now=Date.now()+serverOffsetMs,end=new Date(state.room.round_ends_at).getTime(),reveal=state.room.twist_reveal_at?new Date(state.room.twist_reveal_at).getTime():null;
+    const sec=Math.max(0,Math.ceil((end-now)/1000));
+    if(el){
+      el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+      el.classList.toggle('danger',sec<=30);
+      el.classList.toggle('clock-warning',sec<=60&&sec>30);
+      el.classList.toggle('clock-critical',sec<=10);
+    }
+    warnAtSeconds(sec);
+    if(clockActionPending||busy)return;
+    if(!state.room.twist_revealed&&reveal&&now>=reveal&&sec>0){
+      clockActionPending=true;
+      try{
+        const r=await rpc('bcp_web_reveal_twist',{p_room_id:state.room.id,p_session_token:session.token});
+        if(r?.revealed)toast('CRISIS UPDATE — Twist เปิดแล้ว','error');
+        await refresh();
+      }catch(e){ if(!String(e?.message||'').includes('TWIST_ALREADY'))toast(errText(e),'error'); }
+      finally{clockActionPending=false;}
+    }else if(sec<=0){
+      clockActionPending=true;
+      try{
+        await rpc('bcp_web_expire_round',{p_room_id:state.room.id,p_session_token:session.token});
+        await refresh();
+      }catch(e){
+        if(!String(e?.message||'').includes('GAME_NOT_PLAYING'))toast(errText(e),'error');
+      }finally{clockActionPending=false;}
+    }
   };
-  tick(); clockTimer=setInterval(tick,500);
+  tick();clockTimer=setInterval(tick,500);
 }
-function showLatestResult(){
-  const r=(state.round_results||[]).at(-1); if(!r)return;
-  const key='seen_'+state.room.id+'_'+r.round_no; if(sessionStorage.getItem(key))return; sessionStorage.setItem(key,'1');
-  toast('Round '+r.round_no+' · BC -'+r.bc_loss+' · Cash Used ฿'+money(r.cash_used_round),'success');
-}
-
 async function debrief(){
   stopRealtime();
   shell('<main class="page"><section class="panel"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief</h1><p>กำลังโหลดผลสรุปและ Answer Key…</p></section></main>','<button id="leaveBtn" class="btn small ghost">ออก</button>');
