@@ -2204,3 +2204,92 @@ body{
   .solo-quick-test>.btn{font-size:14px}
   .solo-quick-test>small{font-size:12px}
 }
+
+
+/* CHP official descriptions + dedicated projector launch — 2026-10-08 */
+.private-deck-grid{
+  grid-template-columns:repeat(auto-fill,minmax(136px,1fr));
+  gap:9px;
+}
+.private-deck-card{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  min-height:116px;
+  gap:5px;
+  padding:14px;
+}
+.private-deck-card b{
+  font-size:19px;
+  line-height:1.1;
+  margin:0 0 2px;
+}
+.private-deck-card .deck-name{
+  display:block;
+  width:100%;
+  color:#344b70;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.36;
+  white-space:normal;
+  overflow-wrap:break-word;
+  margin:0;
+  flex:1;
+}
+.private-deck-card .deck-action-count{
+  display:block;
+  margin-top:auto;
+  padding-top:5px;
+  color:#687c99;
+  font-size:11px;
+  font-weight:600;
+}
+.private-deck-card.active .deck-name,
+.private-deck-card.active .deck-action-count{color:#fff}
+.private-deck-card.active .deck-action-count{opacity:.72}
+.private-deck-card:hover:not(.active) .deck-name{color:#213c88}
+.chp-official-name{
+  color:#60708a;
+  font-size:13px;
+  font-weight:600;
+  margin:4px 0;
+  line-height:1.4;
+}
+.deck-detail-head h3{font-size:22px}
+.display-launch{
+  color:#253967!important;
+  border:1px solid rgba(253,201,45,.5)!important;
+  background:#ffda5e!important;
+  font-weight:800;
+  white-space:nowrap;
+  letter-spacing:.025em;
+}
+.display-launch:hover{
+  color:#1e315b!important;
+  background:#ffe58f!important;
+  border-color:#f5c532!important;
+}
+.topbar .display-revoke{
+  white-space:nowrap;
+  color:#f1c4c4;
+  border-color:rgba(251,184,184,.26);
+  font-size:11px;
+}
+@media(max-width:1500px){
+  .private-deck-grid{grid-template-columns:repeat(auto-fill,minmax(124px,1fr))}
+}
+@media(max-width:767px){
+  .private-deck-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .private-deck-card{min-height:113px;padding:11px;gap:4px}
+  .private-deck-card b{font-size:16px}
+  .private-deck-card .deck-name{font-size:12px}
+  .private-deck-card .deck-action-count{font-size:10px}
+  .topbar .display-launch{font-size:11px;min-height:31px}
+  .topbar .display-revoke{font-size:10px}
+}
+@media(max-width:479px){
+  .private-deck-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .private-deck-card{min-height:104px}
+  .private-deck-card .deck-name{font-size:13px}
+}
