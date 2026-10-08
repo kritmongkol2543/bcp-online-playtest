@@ -412,7 +412,7 @@ function teamHtml(){
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
   const canClaimAdmin=!admin&&(!currentAdmin||offlineAdmin);
   const soloQuickTest=admin&&state.room.is_test_mode&&session?.soloSessions?.length===7
-    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · ROUND CONTROLS</b></div><p>กด All Ready เพื่อจบรอบแทน Virtual Roles ทั้ง 7 โดยไม่ต้องสลับ Role</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>REVEAL TWIST</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ ALL READY · END ROUND '+state.room.current_round+'</button><small>เฉพาะ Solo Test · คิดคะแนนจากการ์ดที่วางจริง</small></div>'
+    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · ROUND CONTROLS</b></div><p>กด All Ready เพื่อจบรอบแทน Virtual Roles ทั้ง 7 โดยไม่ต้องสลับ Role</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>REVEAL TWIST</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ ALL READY · END ROUND</button><small>เฉพาะ Solo Test · คิดคะแนนจากการ์ดที่วางจริง</small></div>'
     :'';
   const adminPanel=admin?'<div class="admin-panel"><b>ADMIN CONTROLS</b><div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
