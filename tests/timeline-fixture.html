@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BCP Timeline visual regression fixture</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<div class="shell">
+<header class="topbar"><div class="brand"><span class="role-pill">TCCC Learning Lab</span></div><div class="top-actions"><span class="connection-badge online">ONLINE</span></div></header>
+<main class="page">
+<div class="game-layout">
+  <div class="main-stack">
+    <div class="play-workspace">
+      <div class="play-hand-col">
+        <section class="panel hand private-decks">
+          <div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>CHP Deck ส่วนตัว</h2><p>CMT / LRTs · HO</p></div></div></div>
+          <div class="private-deck-grid"><button class="private-deck-card active"><b>CHP-4</b><span>5 Actions</span></button><button class="private-deck-card"><b>CHP-8</b><span>5 Actions</span></button></div>
+          <div class="hand-grid">
+            <article class="action-card"><div class="card-top"><span>CHP-4</span><strong>฿85,000</strong></div><h3>ตรวจสอบมาตรการอาคารและความพร้อมงานทางไกล</h3><p>คำอธิบาย Action ที่ต้องใช้ในสถานการณ์ BCP</p><footer><span>CMT</span><button class="card-place-btn">วาง Action</button></footer></article>
+          </div>
+        </section>
+      </div>
+      <div class="play-timeline-col">
+        <section class="panel decision" id="timeline">
+          <div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">TEAM DECISION BOARD</span><h2>Shared Timeline</h2><p>ลาก Action มาวางที่ Site หรือใช้ปุ่ม “วาง” บน Card</p></div></div></div>
+          <div class="site-columns">
+            <div class="site-col timeline-site site-owned" id="HO">
+              <div class="site-head"><span><span class="site-marker"></span><b>HO</b></span><span class="site-count">5 ACTIONS</span></div>
+              <div class="site-dropzone"><div class="timeline-chp">
+                <div class="timeline-chp-head"><b>CHP-4</b><span>5 Actions</span></div>
+                <div class="timeline-cards" id="cards"></div>
+              </div></div>
+            </div>
+            <div class="site-col timeline-site" id="PPD"><div class="site-head"><span><span class="site-marker"></span><b>PPD</b></span><span class="site-count">0 ACTIONS</span></div><div class="site-dropzone"><div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วาง Action ที่ PPD</b><small>ลาก Card ลงพื้นที่นี้</small></div></div></div>
+            <div class="site-col timeline-site" id="NKL"><div class="site-head"><span><span class="site-marker"></span><b>NKL</b></span><span class="site-count">0 ACTIONS</span></div><div class="site-dropzone"><div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วาง Action ที่ NKL</b><small>ลาก Card ลงพื้นที่นี้</small></div></div></div>
+          </div>
+          <div class="decision-footer"><span class="decision-hint-dot"></span>ลำดับของ Action ภายใน CHP เดียวกันมีผลต่อผลลัพธ์</div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <aside class="panel team-panel">
+    <div class="panel-head"><div><h3>Team Status</h3><p>CMT / LRTs · HO</p></div></div>
+    <button id="readyBtn" class="btn primary full">Ready to Lock</button>
+  </aside>
+</div>
+</main>
+</div>
+<script>
+const items=[
+ ['ตรวจสอบมาตรการอาคารและความพร้อมงานทางไกล','CMT · ฿85,000'],
+ ['ควบคุมการปิดและเปิดพื้นที่ตามสถานการณ์','CMD · ฿35,000'],
+ ['ทบทวนแผนรับมือน้ำท่วมหลังเหตุ','CMD · ฿45,000'],
+ ['ติดตามคำเตือนน้ำท่วมและประเมินแนวโน้มพื้นที่','CMT · ฿40,000'],
+ ['ยกระดับการเฝ้าระวังและติดตามสถานการณ์','CMT · ฿50,000']
+];
+document.querySelector('#cards').innerHTML=items.map(([title,detail],i)=>`
+<div class="placed-card" data-place="${i}">
+  <span class="seq">${i+1}</span>
+  <div class="placed-card-copy"><b>${title}</b><small>${detail}</small></div>
+  <div class="placed-controls">
+    <button class="icon-btn" data-move="-1" ${i===0?'disabled':''}>↑</button>
+    <button class="icon-btn" data-move="1" ${i===4?'disabled':''}>↓</button>
+    <button class="icon-btn" data-remove-action="${i}">×</button>
+  </div>
+</div>`).join('');
+</script>
+</body>
+</html>
