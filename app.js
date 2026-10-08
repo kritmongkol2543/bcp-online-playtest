@@ -324,28 +324,37 @@ async function startGame(btn){
 
 function storyHtml(){
   const s=state.story||{};
-  return '<section class="panel story"><div class="panel-head"><div><span class="eyebrow">ROUND '+state.room.current_round+'</span><h2>Situation Brief</h2></div>'+(state.room.twist_revealed?'<span class="badge danger">TWIST ACTIVE</span>':'')+'</div><div class="story-block"><b>Big Story</b><p>'+esc(s.big_story||'').replace(/\n/g,'<br>')+'</p></div>'+(s.site_story?'<div class="story-block site"><b>My Site Story</b><p>'+esc(s.site_story).replace(/\n/g,'<br>')+'</p></div>':'')+(s.twist_story||s.site_twist_story?'<div class="story-block twist"><b>CRISIS UPDATE</b><p>'+esc([s.twist_story,s.site_twist_story].filter(Boolean).join('\n\n')).replace(/\n/g,'<br>')+'</p></div>':'')+'</section>';
+  const global=esc(s.big_story||'').replace(/\n/g,'<br>');
+  const local=esc(s.site_story||'').replace(/\n/g,'<br>');
+  const twist=esc([s.twist_story,s.site_twist_story].filter(Boolean).join('\n\n')).replace(/\n/g,'<br>');
+  return '<section class="panel story" id="situationPanel" aria-label="Situation brief"><div class="section-heading"><div class="section-heading-label"><span class="section-step">01</span><div><span class="eyebrow">SITUATION / ROUND '+state.room.current_round+'</span><h2>สถานการณ์ที่ต้องรับมือ</h2><p>อ่านข้อมูลที่ได้รับ แล้วหารือกับทีมก่อนเลือก Action</p></div></div>'+(state.room.twist_revealed?'<span class="badge danger">CRISIS UPDATE</span>':'<span class="badge brief-tag">IN PROGRESS</span>')+'</div><div class="brief-grid '+(!s.site_story?'brief-grid-single':'')+'"><div class="story-block"><div class="story-label"><span class="story-dot global"></span><b>GLOBAL BRIEF</b><small>ทุก Role มองเห็น</small></div><p>'+global+'</p></div>'+(s.site_story?'<div class="story-block site"><div class="story-label"><span class="story-dot site"></span><b>MY SITE BRIEF</b><small>ข้อมูลเฉพาะพื้นที่</small></div><p>'+local+'</p></div>':'')+'</div>'+(s.twist_story||s.site_twist_story?'<div class="story-block twist" role="status"><div class="story-label"><span class="story-dot twist"></span><b>CRISIS UPDATE</b><small>เงื่อนไขล่าสุด</small></div><p>'+twist+'</p></div>':'')+'</section>';
 }
 function statsHtml(){
   const ready=state.members.filter(m=>m.role_key&&m.ready_to_lock).length;
-  return '<div class="stats"><div><small>ROUND</small><b>'+state.room.current_round+'/4</b></div><div><small>TIME</small><b id="clock">--:--</b></div><div><small>CASH</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+state.room.business_continuity+'</b></div><div><small>READY</small><b>'+ready+'/7</b></div></div>';
+  const round=Number(state.room.current_round);
+  return '<div class="game-dashboard"><div class="dashboard-summary"><div class="dashboard-name"><span class="eyebrow">SIMULATION IN PROGRESS</span><h1>Round '+round+' <span>/ 4</span></h1><p>Team Decision Room · '+esc(state.room.code)+'</p></div><div class="round-track" aria-label="Round '+round+' of 4">'+[1,2,3,4].map(n=>'<span class="round-node '+(n<round?'complete':n===round?'current':'')+'"></span>').join('')+'</div></div><div class="stats"><div class="stat-timer"><small><span class="metric-symbol">◷</span> TIME REMAINING</small><b id="clock">--:--</b></div><div><small>CASH AVAILABLE</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+Number(state.room.business_continuity)+'</b></div><div class="stat-ready"><small>TEAM READY</small><b>'+ready+'<span> / 7</span></b><div class="ready-meter"><i style="width:'+(ready/7*100)+'%"></i></div></div></div></div>';
 }
+function workflowHtml(){
+  const placed=(state.placements||[]).filter(p=>!p.removed_at).length;
+  return '<div class="workflow-guide" aria-label="ขั้นตอนการตัดสินใจ"><span class="flow-stage current"><b>01</b> อ่าน Situation</span><span class="flow-divider">›</span><span class="flow-stage '+(selectedChp?'current':'')+'"><b>02</b> เลือก CHP Deck</span><span class="flow-divider">›</span><span class="flow-stage '+(placed?'current':'')+'"><b>03</b> วาง Action <small>'+placed+' ใบ</small></span><span class="flow-divider">›</span><span class="flow-stage">'+(state.me.ready_to_lock?'<span class="flow-check">✓</span>':'<b>04</b>')+' Ready to Lock</span></div>';
+}
+
 function decksHtml(){
   const placements=(state.placements||[]).filter(p=>!p.removed_at);
   const paused=!!state.room.paused_at;
   const bySite={HO:[],PPD:[],NKL:[]};
-  placements.forEach(p=>bySite[p.site].push(p));
-
-  return '<section class="panel decision"><div class="panel-head"><div><span class="eyebrow">SHARED DECISION TIMELINE</span><h2>Team Response</h2><p>ลาก Action จาก CHP Deck ส่วนตัวมาวางตาม Site ระบบจะจัดกลุ่ม CHP ให้อัตโนมัติ · ลำดับมีผลภายใน CHP เดียวกัน</p></div></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
+  placements.forEach(p=>(bySite[p.site]??=[]).push(p));
+  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">TEAM DECISION BOARD</span><h2>Shared Timeline</h2><p>ลาก Action มาวางที่ Site หรือใช้ปุ่ม “วาง” บน Card</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
     const groups={};
     bySite[site].forEach(p=>(groups[p.chp_code]??=[]).push(p));
     const groupHtml=Object.entries(groups).sort(([a],[b])=>chpSort(a,b)).map(([chp,cards])=>{
       cards.sort((a,b)=>a.position-b.position);
       const deckId=cards[0]?.deck_id;
-      return '<div class="timeline-chp"><div class="timeline-chp-head"><b>'+esc(chp)+'</b><span>'+cards.length+' Action</span></div><div class="timeline-cards" data-timeline-deck="'+deckId+'">'+cards.map((p,i)=>'<div class="placed-card" draggable="'+(!paused)+'" data-place="'+p.id+'" data-deck="'+p.deck_id+'"><span class="seq">'+(i+1)+'</span><div><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+(paused?'disabled':'')+'>↑</button><button class="icon-btn" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+(paused?'disabled':'')+'>↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join('')+'</div></div>';
+      return '<div class="timeline-chp"><div class="timeline-chp-head"><b>'+esc(chp)+'</b><span>'+cards.length+' Actions</span></div><div class="timeline-cards" data-timeline-deck="'+deckId+'">'+cards.map((p,i)=>'<div class="placed-card" draggable="'+(!paused)+'" data-place="'+p.id+'" data-deck="'+p.deck_id+'"><span class="seq">'+(i+1)+'</span><div class="placed-card-copy"><b>'+esc(p.title)+'</b><small>'+esc(p.role)+' · ฿'+money(p.cash_cost)+'</small></div><div class="placed-controls"><button class="icon-btn" aria-label="เลื่อน Action ขึ้น" title="เลื่อนขึ้น" data-move="-1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+(paused?'disabled':'')+'>↑</button><button class="icon-btn" aria-label="เลื่อน Action ลง" title="เลื่อนลง" data-move="1" data-place="'+p.id+'" data-deck="'+p.deck_id+'" '+(paused?'disabled':'')+'>↓</button>'+(p.placed_by_member_id===state.me.id?'<button class="icon-btn" aria-label="นำ Action ออกจาก Timeline" title="นำออก" data-remove-action="'+p.id+'" '+(paused?'disabled':'')+'>×</button>':'')+'</div></div>').join('')+'</div></div>';
     }).join('');
-    return '<div class="site-col timeline-site"><div class="site-head"><b>'+site+'</b><span class="site-drop-hint">DROP ACTION</span></div><div class="site-dropzone" data-site-drop="'+site+'">'+(groupHtml||'<div class="empty site-empty">ยังไม่มี Action · ลากการ์ดมาวางที่ Site นี้</div>')+'</div></div>';
-  }).join('')+'</div></section>';
+    const n=bySite[site].length;
+    return '<div class="site-col timeline-site '+(roleSite(state.me.role_key)===site?'site-owned':'')+'"><div class="site-head"><span><span class="site-marker"></span><b>'+site+'</b></span><span class="site-count">'+n+' ACTIONS</span></div><div class="site-dropzone" role="region" aria-label="Drop Action at '+site+'" data-site-drop="'+site+'">'+(groupHtml||'<div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วาง Action ที่ '+site+'</b><small>ลาก Card ลงพื้นที่นี้</small></div>')+'</div></div>';
+  }).join('')+'</div><div class="decision-footer"><span class="decision-hint-dot"></span>การจัดลำดับ Actions ภายใน CHP เดียวกันมีผลต่อผลลัพธ์</div></section>';
 }
 
 function handHtml(){
