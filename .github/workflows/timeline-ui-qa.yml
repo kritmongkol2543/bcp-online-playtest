@@ -13,6 +13,9 @@ on:
     paths:
       - styles.css
       - app.js
+      - display.js
+      - display.css
+      - display.html
       - tests/**
 jobs:
   visual:
@@ -31,6 +34,8 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Verify JavaScript parses
         run: node --check app.js && node --check display.js
+      - name: Verify CMD/CMT site privacy in actual gameplay component
+        run: node tests/site-visibility.cjs
       - name: Verify cash reserved/available/committed UX
         run: node tests/cash-ui.cjs
       - name: Verify central display across four viewports
