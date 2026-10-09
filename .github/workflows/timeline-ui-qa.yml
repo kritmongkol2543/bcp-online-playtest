@@ -34,6 +34,8 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Verify JavaScript parses
         run: node --check app.js && node --check display.js
+      - name: Verify role acknowledgment and private CHP guides
+        run: node tests/role-consent-guides.cjs
       - name: Verify Admin Override for live and Solo Test rooms
         run: node tests/admin-override.cjs
       - name: Verify private Site Brief only shows to CMT/LRTs
