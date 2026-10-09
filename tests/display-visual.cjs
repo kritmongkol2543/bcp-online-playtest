@@ -9,7 +9,7 @@ fs.mkdirSync(screenshots,{recursive:true});
 const mock={
   server_now:new Date().toISOString(),
   room:{id:'00000000-0000-4000-8000-000000000001',code:'ABC123',title:'BCP Workshop Test',status:'playing',
-    scenario_set:1,current_round:2,business_continuity:84,starting_cash:11000000,cash_remaining:9450000,
+    scenario_set:1,current_round:2,business_continuity:84,starting_cash:11000000,cash_remaining:11000000,cash_committed:11000000,cash_reserved:1550000,cash_available:9450000,
     round_ends_at:new Date(Date.now()+8*60*1000).toISOString(),paused_at:null,twist_revealed:true,revision:7},
   story:{big_story:'ช่วงเวลาจำลอง: วันที่ 2 — เกิดแนวฝนชุดใหม่และการประเมินภายหลังเหตุการณ์ สำนักงานใหญ่และโรงงานทั้งสองแห่งต้องประสานข้อมูลเพื่อรักษาความต่อเนื่องทางธุรกิจ',
     twist_story:'เวลา 14.05 น. เกิดฟ้าผ่าบริเวณสายส่ง ทำให้ระบบไฟฟ้าสะดุดและต้องประเมินการฟื้นฟูการผลิต'},
@@ -57,7 +57,8 @@ const run=async()=>{
         accessInHash:location.hash.includes('token='),
         fullscreenButton:!!document.querySelector('#fullscreenBtn'),
         badge:document.querySelector('.round-badge')?.textContent,
-        cash:document.querySelector('.kpi-cash strong')?.textContent
+        cash:document.querySelector('.kpi-cash strong')?.textContent,
+        cashLabels:document.querySelector('.kpi-cash small')?.textContent
       }));
       assert.equal(errors.length,0,'No JS errors: '+errors.join(';'));
       assert.equal(values.siteCount,3);
@@ -68,6 +69,8 @@ const run=async()=>{
       assert.ok(!values.accessInHash,'Viewer bearer token scrubbed from address bar');
       assert.ok(values.fullscreenButton);
       assert.ok(values.cash.includes('9,450,000'));
+      assert.ok(values.cashLabels.includes('RESERVED ฿1,550,000'));
+      assert.ok(values.cashLabels.includes('COMMITTED ฿11,000,000'));
       await page.screenshot({path:path.join(screenshots,'display-'+width+'.png'),fullPage:true});
       console.log('PASS central display',width+'x'+height,'3 sites / 4 KPIs / events / token hidden / no overflow');
       await page.close();
