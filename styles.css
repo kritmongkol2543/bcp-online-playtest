@@ -2329,3 +2329,19 @@ body{
   .game-dashboard .stat-cash .cash-ledger{gap:4px 8px}
   .game-dashboard .stat-cash .cash-ledger span{font-size:10px}
 }
+
+/* BCP scoreboard: compact sticky metrics while scrolling. */
+.game-dashboard{position:sticky;top:80px;z-index:28;padding:8px;margin:0 -8px 13px;background:rgba(247,249,255,.96);border-radius:22px;backdrop-filter:blur(14px);box-shadow:0 8px 22px rgba(20,40,80,.09)}
+.game-dashboard.sticky-compact{grid-template-columns:125px minmax(0,1fr);gap:7px;padding:6px}
+.game-dashboard.sticky-compact .dashboard-summary{padding:8px;min-height:59px;border-radius:13px}
+.game-dashboard.sticky-compact .dashboard-summary .eyebrow,.game-dashboard.sticky-compact .dashboard-summary p,.game-dashboard.sticky-compact .round-track{display:none}
+.game-dashboard.sticky-compact .dashboard-summary h1{margin:0;font-size:19px}
+.game-dashboard.sticky-compact .stats{gap:6px}
+.game-dashboard.sticky-compact .stats>div{min-height:59px;padding:8px 10px;border-radius:13px}
+.game-dashboard.sticky-compact .stats small{font-size:10px}
+.game-dashboard.sticky-compact .stats b,.game-dashboard.sticky-compact .stats .stat-timer b{font-size:20px}
+.game-dashboard.sticky-compact .cash-ledger{margin-top:3px!important}
+.game-dashboard.sticky-compact .cash-ledger span{font-size:9px!important;padding:2px 3px!important}
+@media(min-width:992px){.play-timeline-col,.team-panel{top:166px}.play-timeline-col .decision,.team-panel{max-height:calc(100vh - 185px)}}
+@media(max-width:991px){.game-dashboard.sticky-compact{grid-template-columns:1fr}.game-dashboard.sticky-compact .dashboard-summary{display:none}}
+@media(max-width:520px){.game-dashboard.sticky-compact .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.game-dashboard.sticky-compact .stats>div{min-height:51px;padding:6px}.game-dashboard.sticky-compact .stats b{font-size:16px}}
