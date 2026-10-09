@@ -438,9 +438,7 @@ function teamHtml(){
   const currentAdmin=state.members.find(m=>m.is_admin&&!m.is_bot);
   const offlineAdmin=currentAdmin&&!currentAdmin.online?currentAdmin:null;
   const canClaimAdmin=!admin&&(!currentAdmin||offlineAdmin);
-  const soloQuickTest=admin&&state.room.is_test_mode&&session?.soloSessions?.length===7
-    ?'<div class="solo-quick-test" aria-label="Solo Test round controls"><div class="solo-tool-heading"><span class="solo-tool-dot"></span><b>SOLO TEST · ROUND CONTROLS</b></div><p>กด All Ready เพื่อจบรอบแทน Virtual Roles ทั้ง 7 โดยไม่ต้องสลับ Role</p>'+(state.room.twist_revealed?'':'<button id="soloRevealTwistBtn" class="btn small ghost solo-twist-btn" '+(state.room.paused_at?'disabled':'')+'>REVEAL TWIST</button>')+'<button id="soloAllReadyBtn" class="btn primary full solo-all-ready-btn" '+(state.room.paused_at?'disabled':'')+'>✓ ALL READY · END ROUND</button><small>เฉพาะ Solo Test · คิดคะแนนจากการ์ดที่วางจริง</small></div>'
-    :'';
+  const adminOverride=admin?'<div class="admin-override"><div class="override-head"><b>ADMIN OVERRIDE</b><span>HUMAN & SOLO TEST</span></div><p>ควบคุมการเปิด Twist และบังคับจบรอบแม้ผู้เล่นยังไม่ Ready</p><button id="adminTwistBtn" type="button" class="btn small ghost full">REVEAL TWIST NOW</button><button id="adminReadyAllBtn" type="button" class="btn small primary full">ALL READY · END ROUND</button><button id="adminFinishBtn" type="button" class="btn small danger-btn full">FORCE FINISH GAME</button><small>คำนวณจาก Action ที่วางจริง · บันทึกคำสั่งของ Admin</small></div>':'';
   const adminPanel=admin?'<div class="admin-panel"><b>ADMIN CONTROLS</b><div class="admin-actions">'+
     '<button id="pauseBtn" class="btn small">'+(state.room.paused_at?'▶ Resume':'Ⅱ Pause')+'</button>'+
     '<button id="extendBtn" class="btn small">+1 min</button>'+
@@ -449,7 +447,7 @@ function teamHtml(){
     (waiting.length?'<div class="recovery-box"><small>ROLE RECOVERY</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">REASSIGN ROLE</button></div>':'')+
     '</div>':canClaimAdmin?'<div class="admin-panel"><b>ADMIN RECOVERY</b><p class="muted small-text">'+(offlineAdmin?'หาก Admin เดิม Offline เกิน 90 วินาที ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้':'ห้องนี้ไม่มี Admin ที่ใช้งานอยู่ ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้')+'</p><button id="claimAdminBtn" class="btn full">TAKE ADMIN CONTROL</button></div>':'';
   const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ READY · UNDO':'READY TO LOCK')+'</button><p class="muted small-text">ระบบจะ Lock รอบเมื่อ Ready ครบ 7 Role หรือเมื่อหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>Admin ไม่ถูกนับเป็นผู้เล่นทั้ง 7 Role และไม่ต้องกด Ready</span></div>';
-  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+soloQuickTest+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
+  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+adminOverride+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
 function game(){
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
@@ -461,8 +459,9 @@ function game(){
   if(consequenceDone)consequenceDone.onclick=()=>{const r=(state.round_results||[]).at(-1);if(r)sessionStorage.setItem(consequenceKey(r.round_no),'1');game();};
   if($('#soloRoleSwitcher')) $('#soloRoleSwitcher').onchange=e=>switchSoloRole(e.target.value);
   if($('#readyBtn')) $('#readyBtn').onclick=e=>toggleReady(e.currentTarget);
-  if($('#soloRevealTwistBtn')) $('#soloRevealTwistBtn').onclick=e=>soloRevealTwistNow(e.currentTarget);
-  if($('#soloAllReadyBtn')) $('#soloAllReadyBtn').onclick=e=>soloAllReadyAndEndRound(e.currentTarget);
+  if($('#adminTwistBtn')) $('#adminTwistBtn').onclick=e=>adminManualTwist(e.currentTarget);
+  if($('#adminReadyAllBtn')) $('#adminReadyAllBtn').onclick=e=>adminForceRound(e.currentTarget,false);
+  if($('#adminFinishBtn')) $('#adminFinishBtn').onclick=e=>adminForceRound(e.currentTarget,true);
   if($('#claimAdminBtn')) $('#claimAdminBtn').onclick=e=>claimAdmin(e.currentTarget);
   if($('#pauseBtn')) $('#pauseBtn').onclick=e=>togglePause(e.currentTarget);
   if($('#extendBtn')) $('#extendBtn').onclick=e=>extendRound(e.currentTarget);
