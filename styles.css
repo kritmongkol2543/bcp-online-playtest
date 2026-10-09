@@ -2345,3 +2345,12 @@ body{
 @media(min-width:992px){.play-timeline-col,.team-panel{top:166px}.play-timeline-col .decision,.team-panel{max-height:calc(100vh - 185px)}}
 @media(max-width:991px){.game-dashboard.sticky-compact{grid-template-columns:1fr}.game-dashboard.sticky-compact .dashboard-summary{display:none}}
 @media(max-width:520px){.game-dashboard.sticky-compact .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.game-dashboard.sticky-compact .stats>div{min-height:51px;padding:6px}.game-dashboard.sticky-compact .stats b{font-size:16px}}
+
+.admin-override{display:flex;flex-direction:column;gap:9px;padding:15px;margin:12px 0 15px;border:1px solid #cbd6ed;border-radius:17px;background:linear-gradient(125deg,#f3f6ff,#fff9ed)}
+.override-head{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.override-head b{color:#29469b;font-size:14px}.override-head span{font-size:10px;color:#5d6d87}
+.admin-override p,.admin-override small{margin:0;font-size:12px;line-height:1.6;color:#5a6a85}
+.admin-override>.btn{min-height:42px;width:100%;font-size:12px;font-weight:700;white-space:normal}
+.admin-override #adminTwistBtn{background:#fff;color:#29469b;border-color:#a8b8e2}
+.admin-override #adminReadyAllBtn{background:#29469b;color:#fff;border-color:#29469b}
+.admin-override #adminFinishBtn{background:#fff0f2;color:#a73444;border:1px solid #efb8bd}
