@@ -108,7 +108,7 @@ function render(data){
   const allEvents=(data.events||[]).slice(0,8);
   const kpis=
     blockKpi('BUSINESS CONTINUITY',String(room.business_continuity??'—'),'/ 100 POINTS','kpi-bc')+
-    blockKpi('AVAILABLE CASH','฿'+money(room.cash_remaining),'INITIAL ฿'+money(room.starting_cash),'kpi-cash')+
+    blockKpi('CASH AVAILABLE','฿'+money(room.cash_available??room.cash_remaining),'RESERVED ฿'+money(room.cash_reserved??0)+' · COMMITTED ฿'+money(room.cash_committed??room.cash_remaining),'kpi-cash')+
     blockKpi('ROUND',room.current_round?room.current_round+' / 4':'— / 4','SCENARIO SET '+(room.scenario_set??'—'),'kpi-round')+
     blockKpi('TIME REMAINING','<timer>','AUTO-SYNCED CLOCK','kpi-time');
   // Use the timer as a normal DOM element, not injected through escaped KPI content.
