@@ -292,6 +292,18 @@ function lobby(){
   if($('#startBtn')) $('#startBtn').onclick=e=>startGame(e.currentTarget);
   syncRoleInvitation();
 }
+function openChpGuideModal(guide){
+  document.getElementById('chpGuideOverlay')?.remove();
+  const modal=document.createElement('div');
+  modal.id='chpGuideOverlay';modal.className='bcp-guide-overlay';
+  const points=(guide.points||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+  modal.innerHTML='<section class="bcp-guide-modal" role="dialog" aria-modal="true" aria-labelledby="chpGuideTitle"><div class="guide-topline"><small>'+esc(guide.code)+' · CRISIS HANDLING PROCEDURES</small><button class="guide-close" type="button" aria-label="Close">×</button></div><h2 id="chpGuideTitle">'+esc(guide.title)+'</h2><p class="guide-lead">'+esc(guide.summary)+'</p><h3>ข้อควรพิจารณาตามแนวทาง CHP</h3><ul class="guide-points">'+points+'</ul><p class="guide-source">'+esc(guide.source)+' · เอกสารภายใน TCCC</p><div class="guide-footer"><small>คู่มือประกอบการตัดสินใจ ไม่ใช่เฉลยลำดับ Action</small><button class="guide-done btn primary" type="button">เข้าใจแล้ว</button></div></section>';
+  document.body.appendChild(modal);
+  const close=()=>modal.remove();
+  modal.querySelector('.guide-close').onclick=close;
+  modal.querySelector('.guide-done').onclick=close;
+  modal.onclick=e=>{if(e.target===modal)close();};
+}
 const chpGuideCache=new Map();
 async function showChpGuide(chp,button){
   if(!state?.room||!state.me.role_key)return;
