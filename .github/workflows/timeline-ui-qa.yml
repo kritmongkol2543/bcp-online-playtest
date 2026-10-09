@@ -31,6 +31,8 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Verify JavaScript parses
         run: node --check app.js && node --check display.js
+      - name: Verify cash reserved/available/committed UX
+        run: node tests/cash-ui.cjs
       - name: Verify central display across four viewports
         run: node tests/display-visual.cjs
       - name: Verify timeline geometry across seven viewports
