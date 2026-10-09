@@ -34,6 +34,8 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Verify JavaScript parses
         run: node --check app.js && node --check display.js
+      - name: Verify private Site Brief only shows to CMT/LRTs
+        run: node tests/site-brief-visibility.cjs
       - name: Verify CMD/CMT site privacy in actual gameplay component
         run: node tests/site-visibility.cjs
       - name: Verify cash reserved/available/committed UX
