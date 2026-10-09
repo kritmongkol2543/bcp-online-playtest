@@ -127,6 +127,11 @@ function errText(e){
     .replace('SOLO_REVEAL_TWIST_FIRST','Round นี้มี Twist — เปิด Twist แล้วตรวจและปรับการ์ดก่อนจบรอบ')
     .replace('SOLO_TEST_7_VIRTUAL_ROLES_REQUIRED','ต้องเป็นห้องทดสอบที่มี Virtual Roles ครบ 7 คน')
     .replace('SOLO_TEST_ONLY','ใช้ได้เฉพาะห้อง Solo Test')
+    .replace('CLEAR_ROLE_ASSIGNMENTS_BEFORE_SOLO_TEST','ยกเลิกคำเชิญ Role ที่กำลัง WAITING และถอน Role ที่ยืนยันแล้ว ก่อนเปิด Solo Test')
+    .replace('NO_PENDING_ROLE','คำเชิญ Role นี้ถูกยกเลิกหรือมีการมอบหมายใหม่แล้ว')
+    .replace('ROLE_CONFIRMATION_LOBBY_ONLY','การยืนยัน Role ทำได้เฉพาะก่อนเริ่มเกม')
+    .replace('ACTIVE_ROLE_REQUIRED','ต้องยืนยันและได้รับ Role ก่อนเปิดคู่มือ CHP')
+    .replace('ROLE_ALREADY_ACCEPTED','Role นี้มีผู้ยืนยันรับหน้าที่แล้ว')
     .replace('GAME_PAUSED','เกมถูก Pause อยู่');
 }
 async function rpc(name,args={}){
