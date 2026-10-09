@@ -292,6 +292,21 @@ function lobby(){
   if($('#startBtn')) $('#startBtn').onclick=e=>startGame(e.currentTarget);
   syncRoleInvitation();
 }
+const chpGuideCache=new Map();
+async function showChpGuide(chp,button){
+  if(!state?.room||!state.me.role_key)return;
+  return withButtonBusy(button,'LOADING…',async()=>{
+    try{
+      const key=state.room.id+':'+chp;
+      let guide=chpGuideCache.get(key);
+      if(!guide){
+        guide=await rpc('bcp_web_get_chp_guide',{p_room_id:state.room.id,p_session_token:session.token,p_chp_code:chp});
+        chpGuideCache.set(key,guide);
+      }
+      openChpGuideModal(guide);
+    }catch(e){toast(errText(e),'error');}
+  });
+}
 function syncRoleInvitation(){
   const invite=state?.room?.status==='lobby'?state.me?.pending_role_key:null;
   const tag=invite?[state.room.id,state.me.id,invite].join(':'):null;
