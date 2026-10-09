@@ -367,9 +367,11 @@ function workflowHtml(){
 function decksHtml(){
   const placements=(state.placements||[]).filter(p=>!p.removed_at);
   const paused=!!state.room.paused_at;
+  const mySite=roleSite(state.me.role_key);
+  const visibleSites=mySite?[mySite]:['HO','PPD','NKL'];
   const bySite={HO:[],PPD:[],NKL:[]};
   placements.forEach(p=>(bySite[p.site]??=[]).push(p));
-  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">SHARED DECISION SPACE</span><h2>Shared Timeline</h2><p>ลากการ์ดไปยัง Site ที่ต้องการ หรือกด PLACE CARD · วางเพื่อกันเงิน ถอนแล้วคืน จบรอบจึงหักจริง</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
+  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">SITE DECISION TIMELINE</span><h2>'+(mySite?mySite+' · Site Timeline':'Shared Timeline')+'</h2><p>ลากการ์ดไปยัง Site ที่ต้องการ หรือกด PLACE CARD · วางเพื่อกันเงิน ถอนแล้วคืน จบรอบจึงหักจริง</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+visibleSites.map(site=>{
     const groups={};
     bySite[site].forEach(p=>(groups[p.chp_code]??=[]).push(p));
     const groupHtml=Object.entries(groups).sort(([a],[b])=>chpSort(a,b)).map(([chp,cards])=>{
@@ -379,7 +381,7 @@ function decksHtml(){
     }).join('');
     const n=bySite[site].length;
     return '<div class="site-col timeline-site '+(roleSite(state.me.role_key)===site?'site-owned':'')+'"><div class="site-head"><span><span class="site-marker"></span><b>'+site+'</b></span><span class="site-count">'+n+' ACTIONS</span></div><div class="site-dropzone" role="region" aria-label="Drop Action at '+site+'" data-site-drop="'+site+'">'+(groupHtml||'<div class="empty site-empty"><div class="empty-drop-icon">＋</div><b>วางการ์ดที่ '+site+'</b><small>ลากการ์ดมาที่นี่</small></div>')+'</div></div>';
-  }).join('')+'</div><div class="decision-footer"><span class="decision-hint-dot"></span>ลำดับการ์ดภายใน CHP เดียวกันมีผลต่อคะแนน</div></section>';
+  }).join('')+'</div><div class="decision-footer"><span class="decision-hint-dot"></span>'+(mySite?'แสดงเฉพาะ Action ของ '+mySite+' · ต้องประสาน Site อื่นด้วยการสื่อสาร':'ลำดับการ์ดภายใน CHP เดียวกันมีผลต่อคะแนน')+'</div></section>';
 }
 
 function handHtml(){
