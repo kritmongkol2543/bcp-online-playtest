@@ -9,18 +9,6 @@ const escapeHtml=(value='')=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 const money=n=>new Intl.NumberFormat('th-TH',{maximumFractionDigits:0}).format(Number(n||0));
-const names={HO:'HEAD OFFICE',PPD:'PHRA PRADAENG',NKL:'NAKHON LUANG'};
-const EVENT_NAMES={
-  action_played:'ACTION PLACED',
-  action_removed:'ACTION REMOVED',
-  deck_reordered:'ORDER UPDATED',
-  twist_revealed:'CRISIS UPDATE',
-  round_locked:'ROUND COMPLETE',
-  solo_all_ready:'ALL READY',
-  game_started:'SIMULATION STARTED',
-  game_paused:'SIMULATION PAUSED',
-  game_resumed:'SIMULATION RESUMED'
-};
 const sessionKey='bcp_central_display_v1';
 const hash=new URLSearchParams(location.hash.slice(1));
 if(hash.get('room')&&hash.get('token')){
@@ -68,61 +56,41 @@ function statusLabel(room){
   if(room.status==='completed')return Number(room.business_continuity)<=0?'MISSION FAILED':'SIMULATION COMPLETE';
   if(room.status==='lobby')return 'WAITING FOR PLAYERS';
   if(room.paused_at)return 'PAUSED';
-  return room.twist_revealed?'CRISIS UPDATE ACTIVE':'LIVE SIMULATION';
+  return 'SIMULATION IN PROGRESS';
 }
 function blockKpi(title,value,sub,kind=''){
   return '<div class="kpi '+kind+'"><span class="kpi-label">'+escapeHtml(title)+'</span><strong>'+escapeHtml(value)+'</strong><small>'+escapeHtml(sub)+'</small></div>';
 }
-function siteHtml(site,actions){
-  const siteActions=actions.filter(a=>a.site===site);
-  const chps=[...new Set(siteActions.map(a=>a.chp_code))];
-  const limit=4;
-  const items=siteActions.slice(0,limit).map((a,i)=>
-    '<div class="site-action"><b>'+escapeHtml(a.chp_code)+'</b><span>'+escapeHtml(a.title)+'</span></div>'
-  ).join('');
-  const extra=siteActions.length>limit?'<div class="site-more">+'+(siteActions.length-limit)+' MORE ACTIONS</div>':'';
-  return '<section class="site-board"><div class="site-heading"><div><span class="site-mark"></span><h3>'+site+'</h3><small>'+names[site]+'</small></div><strong>'+siteActions.length+' <small>ACTIONS</small></strong></div>'+
-    '<div class="chp-tags">'+(chps.length?chps.map(c=>'<span>'+escapeHtml(c)+'</span>').join(''):'<span class="empty-chp">NO ACTIONS YET</span>')+'</div>'+
-    '<div class="site-actions">'+(items||'<div class="no-cards">รอการตัดสินใจของทีม</div>')+extra+'</div></section>';
-}
-function eventHtml(event){
-  const name=EVENT_NAMES[event.type]||'UPDATE';
-  const danger=event.type==='twist_revealed';
-  const desc=[event.site,event.chp,event.title].filter(Boolean).join(' · ');
-  return '<div class="event-row '+(danger?'event-danger':'')+'"><span class="event-dot"></span><div class="event-copy"><strong>'+escapeHtml(name)+'</strong>'+
-   (desc?'<span>'+escapeHtml(desc)+'</span>':'')+
-   (event.role?'<small>'+escapeHtml(event.role)+'</small>':'')+
-   '</div><time>'+dateLabel(event.at)+'</time></div>';
-}
 function render(data){
-  const room=data.room||{},results=data.results||[],players=data.players||[],actions=data.actions||[];
-  const complete=room.status==='completed';
+  const room=data.room||{},results=data.results||[],players=data.players||[];
   const ready=players.filter(p=>p.ready).length;
-  const progress=players.length?Math.min(100,Math.round(ready/7*100)):0;
   const latest=results.at(-1);
-  const story=data.story||{};
-  const original=story.big_story||'รอเริ่ม Simulation';
-  const excerpt=original.length>680?original.slice(0,680).trimEnd()+'…':original;
-  const twist=room.twist_revealed&&story.twist_story;
-  const banner=twist?'<div class="twist-banner"><div><span>CRISIS UPDATE</span><h3>เหตุการณ์ใหม่เกิดขึ้น</h3></div><p>'+escapeHtml(String(story.twist_story).slice(0,310))+(String(story.twist_story).length>310?'…':'')+'</p></div>':'';
-  const allEvents=(data.events||[]).slice(0,8);
+  const progress=Math.min(100,Math.round(ready/7*100));
+  const completed=room.status==='completed';
+  const resultByRound=new Map(results.map(r=>[Number(r.round),r]));
   const kpis=
-    blockKpi('BUSINESS CONTINUITY',String(room.business_continuity??'—'),'/ 100 POINTS','kpi-bc')+
-    blockKpi('CASH AVAILABLE','฿'+money(room.cash_available??room.cash_remaining),'RESERVED ฿'+money(room.cash_reserved??0)+' · COMMITTED ฿'+money(room.cash_committed??room.cash_remaining),'kpi-cash')+
-    blockKpi('ROUND',room.current_round?room.current_round+' / 4':'— / 4','SCENARIO SET '+(room.scenario_set??'—'),'kpi-round')+
-    blockKpi('TIME REMAINING','<timer>','AUTO-SYNCED CLOCK','kpi-time');
-  // Use the timer as a normal DOM element, not injected through escaped KPI content.
+    blockKpi('BUSINESS CONTINUITY',String(room.business_continuity??'—'),'AFTER LAST COMPLETED ROUND','kpi-bc')+
+    blockKpi('CASH REMAINING','฿'+money(room.cash_remaining),'CONFIRMED AFTER ROUND LOCK','kpi-cash')+
+    blockKpi('CURRENT ROUND',room.current_round?room.current_round+' / 4':'— / 4','SCENARIO SET '+(room.scenario_set??'—'),'kpi-round')+
+    blockKpi('TIME REMAINING','<timer>','LIVE ROUND CLOCK','kpi-time');
   const timed=kpis.replace('&lt;timer&gt;','<span id="mainTimer">--:--</span>');
-  const stage=complete?'result':room.twist_revealed?'twist':'normal';
+  const archive=[1,2,3,4].map(n=>{
+    const r=resultByRound.get(n);
+    if(!r){
+      const current=Number(room.current_round)===n&&room.status==='playing';
+      return '<div class="archive-round '+(current?'archive-current':'archive-future')+'"><div class="archive-round-top"><span>ROUND '+n+'</span><b>'+(current?'IN PROGRESS':'PENDING')+'</b></div><div class="archive-wait">'+(current?'กำลังดำเนินรอบนี้ · ผลจะแสดงเมื่อ Lock':'รอผลสรุปของรอบนี้')+'</div></div>';
+    }
+    return '<div class="archive-round archive-complete"><div class="archive-round-top"><span>ROUND '+n+'</span><b>COMPLETED</b></div><div class="archive-score"><div><small>BC AFTER</small><strong>'+Number(r.bc_after)+'</strong></div><div><small>BC LOSS</small><strong class="score-loss">−'+Number(r.bc_loss)+'</strong></div></div><div class="archive-cash"><small>CASH USED</small><strong>฿'+money(r.cash_used)+'</strong></div><p>'+escapeHtml(r.outcome||'')+'</p></div>';
+  }).join('');
+  const mostRecent=latest?
+    '<div class="history-outcome"><span>LAST COMPLETED ROUND · '+Number(latest.round)+'</span><h3>'+escapeHtml(latest.outcome||'ROUND COMPLETED')+'</h3><div class="history-outcome-stats"><div><small>BC LOST</small><b>−'+Number(latest.bc_loss)+'</b></div><div><small>CASH SPENT</small><b>฿'+money(latest.cash_used)+'</b></div></div></div>'
+    :'<div class="history-outcome waiting-history"><span>LAST COMPLETED ROUND</span><h3>Waiting for Round 1</h3><p>ผลคะแนนและค่าใช้จ่ายจะแสดงหลังจบรอบเท่านั้น</p></div>';
   $('#displayApp').innerHTML=
-    '<div class="display-headline"><div><span class="eyebrow">TEAM-WIDE LIVE OVERVIEW</span><h1>'+escapeHtml(statusLabel(room))+'</h1><p>'+escapeHtml(room.title||'BCP Online Playtest')+'</p></div><span class="round-badge '+stage+'">'+escapeHtml(room.status.toUpperCase())+'</span></div>'+
+    '<div class="display-headline"><div><span class="eyebrow">HISTORICAL PERFORMANCE / LIVE ROUND & READINESS</span><h1>'+escapeHtml(statusLabel(room))+'</h1><p>'+escapeHtml(room.title||'BCP Online Playtest')+'</p></div><span class="round-badge '+(completed?'result':'normal')+'">'+escapeHtml(room.status.toUpperCase())+'</span></div>'+
     '<section class="kpi-grid">'+timed+'</section>'+
-    '<div class="display-main"><div class="display-primary"><div class="scenario-panel"><div class="section-header"><span>01 / GLOBAL SITUATION</span><small>INFORMATION SHARED WITH ALL ROLES</small></div><p>'+escapeHtml(excerpt).replace(/\n/g,'<br>')+'</p></div>'+
-    banner+
-    '<section class="sites"><div class="section-header"><span>02 / TEAM RESPONSE</span><small>ONLY PLACED ACTIONS ARE VISIBLE</small></div><div class="site-grid">'+['HO','PPD','NKL'].map(s=>siteHtml(s,actions)).join('')+'</div></section></div>'+
-    '<aside class="display-aside"><div class="readiness-panel"><div class="section-header"><span>TEAM READINESS</span><small>'+players.length+' / 7 ROLES</small></div><div class="readiness-count">'+ready+'<span> / 7 READY</span></div><div class="readiness-track"><div style="width:'+progress+'%"></div></div><p>'+ (complete?'Simulation complete':room.status==='lobby'?'Waiting for room to start':ready===7?'Team ready to lock': 'Waiting for team decisions') +'</p></div>'+
-    (latest?'<div class="outcome-panel"><div class="section-header"><span>LAST ROUND RESULT</span><small>ROUND '+latest.round+'</small></div><div class="outcome-numbers"><div><small>BC LOSS</small><strong>−'+latest.bc_loss+'</strong></div><div><small>CASH USED</small><strong>฿'+money(latest.cash_used)+'</strong></div></div><p>'+escapeHtml(latest.outcome||'')+'</p></div>':'')+
-    '<div class="events-panel"><div class="section-header"><span>LIVE EVENT FEED</span><small>LAST '+allEvents.length+' EVENTS</small></div><div class="event-list">'+(allEvents.length?allEvents.map(eventHtml).join(''):'<div class="no-events">Waiting for events…</div>')+'</div></div></aside></div>';
+    '<div class="history-layout"><section class="history-panel"><div class="section-header"><span>ROUND HISTORY</span><small>FINALIZED RESULTS ONLY · NO LIVE ACTION DATA</small></div><div class="archive-grid">'+archive+'</div></section>'+
+    '<aside class="history-sidebar"><section class="readiness-panel"><div class="section-header"><span>TEAM READINESS</span><small>'+players.length+' / 7 ROLES</small></div><div class="readiness-count">'+ready+'<span> / 7 READY</span></div><div class="readiness-track"><div style="width:'+progress+'%"></div></div><div class="readiness-hint">'+(completed?'Simulation completed':room.status==='lobby'?'Waiting for session':ready===7?'All players are ready':'Awaiting players to confirm readiness')+'</div></section>'+mostRecent+
+    '<div class="history-policy"><span class="policy-dot"></span><div><strong>TEAM COLLABORATION MODE</strong><p>ไม่มีการเปิดเผยการตัดสินใจราย Site บนจอกลาง · Cash และ BC อัปเดตเมื่อจบรอบเท่านั้น</p></div></div></aside></div>';
   $('#roomCode').textContent='ROOM '+(room.code||'—');
   tick();
 }
