@@ -61,6 +61,31 @@ function statusLabel(room){
 function blockKpi(title,value,sub,kind=''){
   return '<div class="kpi '+kind+'"><span class="kpi-label">'+escapeHtml(title)+'</span><strong>'+escapeHtml(value)+'</strong><small>'+escapeHtml(sub)+'</small></div>';
 }
+function renderRoundDetails(r){
+  if(!r)return '';
+  const scoring=r.scoring||{};
+  const groups=Array.isArray(scoring.expected_chps)?scoring.expected_chps:[];
+  const titles=r.action_titles||{};
+  const lines=[];
+  const rawTotal=groups.reduce((sum,g)=>sum+Number(g.chp_loss||0),0);
+  for(const group of groups){
+    const missing=Array.isArray(group.missing_cards)?group.missing_cards:[];
+    const wasted=Array.isArray(group.wasted_cards)?group.wasted_cards:[];
+    if(!missing.length&&!wasted.length&&!Number(group.chp_loss||0))continue;
+    const item=(code)=>'<li>'+escapeHtml(titles[code]||code)+'</li>';
+    const chpLoss=Number(group.chp_loss||0);
+    lines.push('<div class="scoring-group"><div class="scoring-heading"><b>'+escapeHtml(group.site)+' / '+escapeHtml(group.chp_code)+' · LEVEL '+escapeHtml(group.actual_level)+'</b><strong>−'+chpLoss+' BC</strong></div>'+
+      (missing.length?'<div class="scoring-reason"><span>ขาด Action '+missing.length+' ใบ · ค่าหักก่อน Cap '+Number(group.missing_loss||0)+' BC</span><ul>'+missing.map(item).join('')+'</ul></div>':'')+
+      (wasted.length?'<div class="scoring-reason"><span>ลำดับ Action ไม่ถูกต้อง / Wasted '+wasted.length+' ใบ · ค่าหักก่อน Cap '+Number(group.wasted_loss||0)+' BC</span><ul>'+wasted.map(item).join('')+'</ul></div>':'')+
+      '<small>ผลหักของ CHP นี้คิดหลังใช้เพดานตาม Level ไม่บวกค่าหักซ้ำ</small></div>');
+  }
+  const extra=Array.isArray(scoring.extra_chps)?scoring.extra_chps:[];
+  if(extra.length)lines.push('<div class="scoring-group"><div class="scoring-heading"><b>EXTRA CHP / ไม่อยู่ใน Scenario</b><strong>0 BC</strong></div><p>'+extra.map(c=>escapeHtml(c.site+' · '+c.chp_code+' ('+c.cards_played+' Actions)')).join(', ')+'</p><small>เสีย Cash ของการ์ดที่ใช้ แต่ไม่หัก BC เพิ่มจากการเลือก Extra CHP</small></div>');
+  if(!lines.length)lines.push('<div class="scoring-clear">ไม่พบรายการ Action ขาดหรือลำดับผิดที่ถูกหักคะแนนในรอบนี้</div>');
+  const capped=rawTotal>30;
+  const cappedText=capped?'ค่าหักรวมก่อนจำกัดเพดาน '+rawTotal+' BC → หักจริงสูงสุด 30 BC':'ค่าหักรวมตามที่คำนวณได้ '+Number(r.bc_loss)+' BC (ไม่เกิน 30 BC ต่อรอบ)';
+  return '<section class="round-explanation"><div class="section-header"><span>WHY POINTS WERE LOST</span><small>SCORING AFTER ROUND LOCK</small></div><div class="cap-explainer"><strong>ROUND CAP · MAX −30 BC</strong><span>'+escapeHtml(cappedText)+'</span></div><div class="scoring-scroll">'+lines.join('')+'</div></section>';
+}
 function render(data){
   const room=data.room||{},results=data.results||[],players=data.players||[];
   const ready=players.filter(p=>p.ready).length;
@@ -83,13 +108,14 @@ function render(data){
     return '<div class="archive-round archive-complete"><div class="archive-round-top"><span>ROUND '+n+'</span><b>COMPLETED</b></div><div class="archive-score"><div><small>BC AFTER</small><strong>'+Number(r.bc_after)+'</strong></div><div><small>BC LOSS</small><strong class="score-loss">−'+Number(r.bc_loss)+'</strong></div></div><div class="archive-cash"><small>CASH USED</small><strong>฿'+money(r.cash_used)+'</strong></div><p>'+escapeHtml(r.outcome||'')+'</p></div>';
   }).join('');
   const mostRecent=latest?
-    '<div class="history-outcome"><span>LAST COMPLETED ROUND · '+Number(latest.round)+'</span><h3>'+escapeHtml(latest.outcome||'ROUND COMPLETED')+'</h3><div class="history-outcome-stats"><div><small>BC LOST</small><b>−'+Number(latest.bc_loss)+'</b></div><div><small>CASH SPENT</small><b>฿'+money(latest.cash_used)+'</b></div></div></div>'
+    '<div class="history-outcome"><span>LAST ROUND RESULT · '+Number(latest.round)+'</span><h3>'+escapeHtml(latest.outcome||'ROUND COMPLETED')+'</h3><div class="history-outcome-stats"><div><small>BC LOST</small><b>−'+Number(latest.bc_loss)+'</b></div><div><small>CASH SPENT</small><b>฿'+money(latest.cash_used)+'</b></div></div></div>'
     :'<div class="history-outcome waiting-history"><span>LAST COMPLETED ROUND</span><h3>Waiting for Round 1</h3><p>ผลคะแนนและค่าใช้จ่ายจะแสดงหลังจบรอบเท่านั้น</p></div>';
   $('#displayApp').innerHTML=
     '<div class="display-headline"><div><span class="eyebrow">HISTORICAL PERFORMANCE / LIVE ROUND & READINESS</span><h1>'+escapeHtml(statusLabel(room))+'</h1><p>'+escapeHtml(room.title||'BCP Online Playtest')+'</p></div><span class="round-badge '+(completed?'result':'normal')+'">'+escapeHtml(room.status.toUpperCase())+'</span></div>'+
     '<section class="kpi-grid">'+timed+'</section>'+
     '<div class="history-layout"><section class="history-panel"><div class="section-header"><span>ROUND HISTORY</span><small>FINALIZED RESULTS ONLY · NO LIVE ACTION DATA</small></div><div class="archive-grid">'+archive+'</div></section>'+
     '<aside class="history-sidebar"><section class="readiness-panel"><div class="section-header"><span>TEAM READINESS</span><small>'+players.length+' / 7 ROLES</small></div><div class="readiness-count">'+ready+'<span> / 7 READY</span></div><div class="readiness-track"><div style="width:'+progress+'%"></div></div><div class="readiness-hint">'+(completed?'Simulation completed':room.status==='lobby'?'Waiting for session':ready===7?'All players are ready':'Awaiting players to confirm readiness')+'</div></section>'+mostRecent+
+    renderRoundDetails(latest)+
     '<div class="history-policy"><span class="policy-dot"></span><div><strong>TEAM COLLABORATION MODE</strong><p>ไม่มีการเปิดเผยการตัดสินใจราย Site บนจอกลาง · Cash และ BC อัปเดตเมื่อจบรอบเท่านั้น</p></div></div></aside></div>';
   $('#roomCode').textContent='ROOM '+(room.code||'—');
   tick();
