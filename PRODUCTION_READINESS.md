@@ -200,3 +200,17 @@ This rule replaces the former nonrefundable-on-placement behavior.
 - **Realtime projector elements:** countdown clock, current round, and team Ready progress (via 3-second polls and local clock interpolation). New historical result cards appear when rounds are scored and finalized.
 - **Motion design:** ambient navy/cobalt/gold glows drift continuously on the projector using transform-only CSS; `prefers-reduced-motion` disables the ambient animations.
 - **Regression coverage:** SQL integration asserts role isolation across two sites and CMC oversight, no projector current-round leaks, and committed Cash only after lock. Automated Node/Chromium checks assert Site-only UI, no `TEAM RESPONSE` or `LIVE EVENT FEED`, and responsive projector history cards at 4 viewport sizes.
+
+## Admin Override — Live Human & Solo Test (2026-10-09)
+
+The room administrator may issue three commands while a Simulation is playing, regardless of whether the 7 role holders are human or virtual:
+
+1. **REVEAL TWIST NOW:** reveal the source-defined Twist early; resets player Ready as normal. If no Twist exists, the RPC returns NO_TWIST_THIS_ROUND.
+2. **ALL READY · END ROUND:** mark all 7 assigned Role holders Ready in one atomic transaction, reveal an outstanding scripted Twist if necessary, and run canonical round scoring. Cash is committed and BC deductions apply to the Action Cards actually placed, including missing Actions. Advances normally unless Round 4 or BC=0.
+3. **FORCE FINISH GAME:** same scoring and Ready operation, then complete the Simulation after the current Round, even before Round 4. The debrief answer key is restricted to played/scored rounds. This is distinct from closing/deleting the room.
+
+These Admin commands work for a real-room Host who holds no participant Role. A confirmed Finish requires typing FINISH. Paused rooms can be ended: the RPC clears pause state and the canonical scorer initializes the next round's timer, or completes the game. The server enforces Admin authorization using the Admin token, room-level row locking, 7 assigned active roles, explicit audit events, and the existing Twist/BC/Cash score model. Users without Admin access cannot invoke the RPC even by editing the client code.
+
+Database API: `public.bcp_web_admin_override(room_id, session_token, action)`; action is `reveal_twist`, `end_round`, or `finish_game`. The legacy Solo-only RPCs remain server-side for backward compatibility but the frontend now uses this Admin-wide API.
+
+QA includes: 7 real human role holders with 0/7 Ready; non-admin denial; 7/7 forced Ready and lock; manual/automatic Twist; early completion in Round 2 with only two scored rounds and matching debrief; paused-room override and next-round clock restoration. Existing 8/8 scoring/operational/lifecycle regression tests also pass.
