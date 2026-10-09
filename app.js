@@ -1074,3 +1074,5 @@ window.addEventListener('offline',()=>setConnectionState('offline'));
 
 landing();
 if(session) refresh(true);
+
+window.addEventListener('scroll',()=>{document.querySelector('.game-dashboard')?.classList.toggle('sticky-compact',window.scrollY>190);},{passive:true});
