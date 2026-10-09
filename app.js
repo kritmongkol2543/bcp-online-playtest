@@ -423,7 +423,7 @@ function handHtml(){
   const deckSwitch='<div class="deck-library-label"><b>SELECT CHP DECK</b><small>สลับ CHP ได้ทันที</small></div><div class="private-deck-grid" role="group" aria-label="CHP Decks ของผู้เล่น">'+chps.map(chp=>{
     const active=selectedChp===chp;
     const label=chpMeta(chp);
-    return '<button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'" title="'+esc(chp+' — '+label.full)+'" aria-label="'+esc(chp+' '+label.short+' — '+label.full)+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span class="deck-name">'+esc(label.short)+'</span><span class="deck-action-count">'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button>';
+    return '<div class="private-deck-wrapper"><button type="button" class="private-deck-card '+(active?'active':'')+'" data-private-chp="'+esc(chp)+'" aria-pressed="'+active+'" title="'+esc(chp+' — '+label.full)+'" aria-label="'+esc(chp+' '+label.short+' — '+label.full)+'"><span class="deck-emblem" aria-hidden="true">◈</span><b>'+esc(chp)+'</b><span class="deck-name">'+esc(label.short)+'</span><span class="deck-action-count">'+hand.filter(c=>c.chp_code===chp).length+' Actions</span></button><button type="button" class="deck-info-btn" data-chp-info="'+esc(chp)+'" aria-label="Guide '+esc(chp)+'">ⓘ</button></div>';
   }).join('')+'</div>';
   const header='<div class="section-heading"><div class="section-heading-label"><span class="section-step">02</span><div><span class="eyebrow">PRIVATE ACTION LIBRARY</span><h2>My CHP Decks</h2><p>'+esc(ROLE_LABEL[role])+' · '+hand.length+' การ์ดใน Role นี้</p></div></div><span class="badge privacy-badge">PRIVATE</span></div>';
   if(!selectedChp){
