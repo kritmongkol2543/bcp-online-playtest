@@ -191,3 +191,12 @@ This rule replaces the former nonrefundable-on-placement behavior.
 - The player UI and Central Display expose `cash_available`, `cash_reserved`, and `cash_committed` separately, while `cash_remaining` remains the authoritative committed balance.
 - Previous completed rounds were intentionally not retroactively changed. At migration, any previous immediate charges within **playing** rounds were restored into Committed Cash once; those rounds now obey the reserve model going forward.
 - Regression QA: six scenario bot checks, operational, lifecycle; plus a disposable Solo Test round proving place → remove → re-place → round lock and a low-budget case proving over-allocation is refused.
+
+## Role-private site timelines and historical Central Display (2026-10-09)
+
+- **During active gameplay:** CMD_HO/CMT_HO only see HO Action placements and HO Decks; CMD_PPD/CMT_PPD only see PPD; CMD_NKL/CMT_NKL only see NKL. CMC retains the all-site timeline because its role coordinates the incident response. Solo Test role switching applies the selected role's visibility. Enforced by `bcp_web_get_state` RPC and mirrored in the UI. Live sync notifications do not contain Action details.
+- **Central Display is a retrospective scoreboard, not a surveillance screen.** The `bcp_web_get_display_state` RPC exposes only room/clock/current-round fields, team Ready status, and previous finalized round results. No `story`, `actions`, `events`, Cash reservations, site placement details, private hand, or Twist data are returned.
+- **Cash/BC on projector** use server-committed values after a round is locked, never speculative Action placement amounts. Player-facing Available/Reserved Cash stays fully functional on the role screen.
+- **Realtime projector elements:** countdown clock, current round, and team Ready progress (via 3-second polls and local clock interpolation). New historical result cards appear when rounds are scored and finalized.
+- **Motion design:** ambient navy/cobalt/gold glows drift continuously on the projector using transform-only CSS; `prefers-reduced-motion` disables the ambient animations.
+- **Regression coverage:** SQL integration asserts role isolation across two sites and CMC oversight, no projector current-round leaks, and committed Cash only after lock. Automated Node/Chromium checks assert Site-only UI, no `TEAM RESPONSE` or `LIVE EVENT FEED`, and responsive projector history cards at 4 viewport sizes.
