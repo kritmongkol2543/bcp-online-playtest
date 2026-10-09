@@ -292,6 +292,26 @@ function lobby(){
   if($('#startBtn')) $('#startBtn').onclick=e=>startGame(e.currentTarget);
   syncRoleInvitation();
 }
+function syncRoleInvitation(){
+  const invite=state?.room?.status==='lobby'?state.me?.pending_role_key:null;
+  const tag=invite?[state.room.id,state.me.id,invite].join(':'):null;
+  let panel=document.getElementById('roleInviteOverlay');
+  if(!invite){panel?.remove();return;}
+  if(panel?.dataset.invite===tag)return;
+  panel?.remove();
+  const guide=state.me.pending_guide||{};
+  panel=document.createElement('div');
+  panel.id='roleInviteOverlay';panel.dataset.invite=tag;panel.className='bcp-guide-overlay';
+  panel.innerHTML='<section class="bcp-guide-modal" role="dialog" aria-modal="true" aria-labelledby="roleInviteTitle"><small>ROLE INVITATION · WAITING</small><h2 id="roleInviteTitle">'+esc(ROLE_LABEL[invite]||invite)+'</h2><h3>'+esc(guide.title||'')+'</h3><p>'+esc(guide.summary||'')+'</p><ul>'+((guide.points||[]).map(x=>'<li>'+esc(x)+'</li>').join(''))+'</ul><small>ที่มา: '+esc(guide.source||'TCCC Basic Plan')+' · สำหรับใช้ภายในเท่านั้น</small><div class="guide-actions"><span>ต้องกดยืนยันก่อน Admin จะเห็นว่า Role นี้ได้รับแล้ว</span><button id="acceptRoleBtn" type="button" class="btn primary">ACCEPT ROLE · ยืนยันรับหน้าที่</button></div></section>';
+  document.body.appendChild(panel);
+  const btn=panel.querySelector('#acceptRoleBtn');
+  btn.onclick=()=>withButtonBusy(btn,'CONFIRMING…',async()=>{
+    try{
+      await rpc('bcp_web_confirm_role',{p_room_id:state.room.id,p_session_token:session.token});
+      panel.remove();toast('ยืนยันรับ Role แล้ว','success');await refresh();
+    }catch(e){toast(errText(e),'error');await refresh();}
+  });
+}
 async function toggleSoloTest(btn){
   const adminToken=session.adminToken||session.token;
   return withButtonBusy(btn,session.soloSessions?.length?'กำลังปิด Test…':'กำลังสร้าง 7 Role…',async()=>{
