@@ -46,7 +46,7 @@ const run=async()=>{
       const url='http://127.0.0.1:'+port+'/display.html#room='+mock.room.id+'&token='+'a'.repeat(64);
       await page.goto(url,{waitUntil:'domcontentloaded'});
       await page.locator('.kpi-grid .kpi').first().waitFor({timeout:10000});
-      await page.locator('.site-board').first().waitFor();
+      await page.locator('.archive-round').first().waitFor();
       const values=await page.evaluate(()=>({
         documentWidth:document.documentElement.scrollWidth,
         viewportWidth:innerWidth,
