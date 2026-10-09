@@ -107,7 +107,7 @@ function errText(e){
     .replace('ALL_7_PLAYERS_MUST_BE_READY','ต้องมี Ready ครบทั้ง 7 Role ก่อนจบรอบ')
     .replace('ALL_7_ROLES_MUST_BE_ONLINE','Role ครบแล้ว แต่ยังมีผู้เล่น Offline — ให้กลับเข้าเกมหรือเปลี่ยนผู้เล่นก่อนเริ่ม')
     .replace('ADMIN_STILL_ONLINE','Admin เดิมยังใช้งานอยู่ จึงรับสิทธิ์แทนไม่ได้')
-    .replace('INSUFFICIENT_CASH','Cash ไม่เพียงพอ')
+    .replace('INSUFFICIENT_CASH','Cash Available ไม่เพียงพอ เนื่องจากมีการกันวงเงินให้ Action อื่นอยู่')
     .replace('CARD_ALREADY_USED','การ์ดใบนี้ถูกใช้ใน Site นี้แล้ว')
     .replace('ADMIN_REQUIRED','เฉพาะ Admin เท่านั้นที่ใช้คำสั่งนี้ได้')
     .replace('ROLE_REQUIRED','ยังไม่ได้รับ Role')
@@ -354,7 +354,10 @@ function storyHtml(){
 function statsHtml(){
   const ready=state.members.filter(m=>m.role_key&&m.ready_to_lock).length;
   const round=Number(state.room.current_round);
-  return '<div class="game-dashboard"><div class="dashboard-summary"><div class="dashboard-name"><span class="eyebrow">SIMULATION LIVE ROUND</span><h1>Round '+round+' <span>/ 4</span></h1><p>ROOM · '+esc(state.room.code)+'</p></div><div class="round-track" aria-label="Round '+round+' of 4">'+[1,2,3,4].map(n=>'<span class="round-node '+(n<round?'complete':n===round?'current':'')+'"></span>').join('')+'</div></div><div class="stats"><div class="stat-timer"><small><span class="metric-symbol">◷</span> TIME REMAINING</small><b id="clock">--:--</b></div><div><small>CASH AVAILABLE</small><b>฿'+money(state.room.cash_remaining)+'</b></div><div><small>BUSINESS CONTINUITY</small><b>'+Number(state.room.business_continuity)+'</b></div><div class="stat-ready"><small>TEAM READY</small><b>'+ready+'<span> / 7</span></b><div class="ready-meter"><i style="width:'+(ready/7*100)+'%"></i></div></div></div></div>';
+  const available=Number(state.room.cash_available??state.room.cash_remaining);
+  const reserved=Number(state.room.cash_reserved??0);
+  const committed=Number(state.room.cash_committed??state.room.cash_remaining);
+  return '<div class="game-dashboard"><div class="dashboard-summary"><div class="dashboard-name"><span class="eyebrow">SIMULATION LIVE ROUND</span><h1>Round '+round+' <span>/ 4</span></h1><p>ROOM · '+esc(state.room.code)+'</p></div><div class="round-track" aria-label="Round '+round+' of 4">'+[1,2,3,4].map(n=>'<span class="round-node '+(n<round?'complete':n===round?'current':'')+'"></span>').join('')+'</div></div><div class="stats"><div class="stat-timer"><small><span class="metric-symbol">◷</span> TIME REMAINING</small><b id="clock">--:--</b></div><div class="stat-cash"><small>CASH AVAILABLE</small><b>฿'+money(available)+'</b><div class="cash-ledger"><span class="cash-reserved" title="กันวงเงินไว้สำหรับการ์ดที่วาง ยังไม่หักเงินจริง">RESERVED ฿'+money(reserved)+'</span><span class="cash-committed" title="เงินคงเหลือหลังจบรอบที่คิดคะแนนแล้ว">COMMITTED ฿'+money(committed)+'</span></div></div><div><small>BUSINESS CONTINUITY</small><b>'+Number(state.room.business_continuity)+'</b></div><div class="stat-ready"><small>TEAM READY</small><b>'+ready+'<span> / 7</span></b><div class="ready-meter"><i style="width:'+(ready/7*100)+'%"></i></div></div></div></div>';
 }
 function workflowHtml(){
   const placed=(state.placements||[]).filter(p=>!p.removed_at).length;
@@ -366,7 +369,7 @@ function decksHtml(){
   const paused=!!state.room.paused_at;
   const bySite={HO:[],PPD:[],NKL:[]};
   placements.forEach(p=>(bySite[p.site]??=[]).push(p));
-  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">SHARED DECISION SPACE</span><h2>Shared Timeline</h2><p>ลากการ์ดไปยัง Site ที่ต้องการ หรือกด PLACE CARD</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
+  return '<section class="panel decision" id="sharedTimeline"><div class="section-heading"><div class="section-heading-label"><span class="section-step">03</span><div><span class="eyebrow">SHARED DECISION SPACE</span><h2>Shared Timeline</h2><p>ลากการ์ดไปยัง Site ที่ต้องการ หรือกด PLACE CARD · วางเพื่อกันเงิน ถอนแล้วคืน จบรอบจึงหักจริง</p></div></div><span class="badge response-count">'+placements.length+' ACTIONS</span></div><div class="site-columns">'+['HO','PPD','NKL'].map(site=>{
     const groups={};
     bySite[site].forEach(p=>(groups[p.chp_code]??=[]).push(p));
     const groupHtml=Object.entries(groups).sort(([a],[b])=>chpSort(a,b)).map(([chp,cards])=>{
@@ -602,6 +605,7 @@ async function placeCard(cardKey,site,btn){
       });
       selectedCard=null;
       await refresh();
+      toast('กันวงเงินชั่วคราวแล้ว · ถอนการ์ดก่อนจบรอบได้','success');
       requestAnimationFrame(()=>{
         const el=document.querySelector('[data-site-drop="'+CSS.escape(site)+'"]');
         el?.classList.add('just-updated');
@@ -617,6 +621,7 @@ async function removeAction(id,btn){
     try{
       await rpc('bcp_web_remove_action',{p_room_id:state.room.id,p_session_token:session.token,p_placement_id:id});
       await refresh();
+      toast('ถอนการ์ดแล้ว · คืนวงเงินที่กันไว้','success');
     }catch(e){toast(errText(e),'error');}
   });
 }
