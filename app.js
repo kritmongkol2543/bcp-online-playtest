@@ -499,6 +499,7 @@ function game(){
     game();
     requestAnimationFrame(()=>document.querySelector('.deck-detail')?.scrollIntoView({behavior:'smooth',block:'nearest'}));
   });
+  $('[data-chp-info]').forEach(b=>b.onclick=e=>{e.stopPropagation();showChpGuide(b.dataset.chpInfo,b);});
   if($('#backToDecks')) $('#backToDecks').onclick=()=>{selectedChp=null;selectedCard=null;game();};
 
   $$('[data-remove-action]').forEach(b=>b.onclick=e=>{e.stopPropagation();removeAction(b.dataset.removeAction,e.currentTarget);});
