@@ -454,3 +454,52 @@ body::after{
 @media(prefers-reduced-motion:reduce){
   body::before,body::after{animation:none!important;will-change:auto}
 }
+
+
+/* Public projector explanation: shown ONLY for completed/locked rounds */
+.round-explanation{
+  padding:17px 18px;
+  border:1px solid rgba(160,184,225,.23);
+  border-radius:20px;
+  background:rgba(19,32,53,.83);
+  min-height:0;
+  display:flex; flex-direction:column; gap:12px;
+}
+.round-explanation>.section-header{margin:0}
+.round-explanation .cap-explainer{
+  padding:11px 13px;
+  border-radius:12px;
+  background:rgba(250,174,61,.11);
+  border:1px solid rgba(250,174,61,.29);
+  display:flex; flex-direction:column; gap:4px;
+}
+.cap-explainer strong{color:#ffda7f;font-size:12px;letter-spacing:.06em}
+.cap-explainer span{color:#e0d2af;font-size:12px;line-height:1.5}
+.scoring-scroll{
+  overflow:auto;
+  max-height:clamp(210px,27vh,430px);
+  min-height:0;
+  padding-right:5px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+.scoring-group{
+  padding:12px; border:1px solid rgba(151,179,218,.18);
+  border-radius:12px;background:rgba(7,19,39,.38);
+}
+.scoring-heading{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;margin-bottom:6px;
+}
+.scoring-heading b{font-size:13px;color:#dce8fb;line-height:1.4}
+.scoring-heading strong{color:#ff989c;font-size:20px;white-space:nowrap}
+.scoring-reason{margin-top:7px}
+.scoring-reason>span{display:block;color:#e0cba6;font-size:12px;line-height:1.5}
+.scoring-reason ul{padding-left:17px;margin:5px 0 7px}
+.scoring-reason li{font-size:12px;line-height:1.5;color:#c7d8f1;margin:0 0 5px}
+.scoring-group>small{display:block;color:#839ebb;font-size:10px;line-height:1.45}
+.scoring-group p,.scoring-clear{color:#d2e0f4;font-size:12px;line-height:1.6}
+.history-sidebar .round-explanation{flex:none}
+@media(max-width:1024px){.scoring-scroll{max-height:350px}}
+@media(max-width:720px){.round-explanation{padding:14px}.scoring-scroll{max-height:320px}}
