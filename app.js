@@ -758,6 +758,40 @@ async function soloAllReadyAndEndRound(btn){
   });
 }
 
+async function adminManualTwist(btn){
+  if(!hasAdminControl())return toast('เฉพาะ Admin เท่านั้น','error');
+  return withButtonBusy(btn,'REVEALING…',async()=>{
+    try{
+      const r=await rpc('bcp_web_admin_override',{p_room_id:state.room.id,p_session_token:adminToken(),p_action:'reveal_twist'});
+      toast(r?.reason==='NO_TWIST_THIS_ROUND'?'รอบนี้ไม่มี Twist':r?.already?'Twist เปิดอยู่แล้ว':'เปิด Twist แล้ว ผู้เล่นสามารถปรับ Action ได้','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
+}
+async function adminForceRound(btn,finishGame){
+  if(!hasAdminControl())return toast('เฉพาะ Admin เท่านั้น','error');
+  const round=Number(state.room.current_round);
+  const ready=state.members.filter(x=>x.role_key&&x.ready_to_lock).length;
+  const msg=[
+    finishGame?'ยุติ Simulation ตอนนี้ (Round '+round+')?':'สั่ง All Ready และจบ Round '+round+'?',
+    'READY ปัจจุบัน '+ready+'/7 — Admin จะตั้งทุก Role เป็น READY',
+    'คิดคะแนนจาก Action ที่วางจริง ไม่เพิ่มการ์ดให้ผู้เล่น',
+    'หากมี Twist ที่ยังไม่เปิด จะเปิดก่อนคิดคะแนนทันที',
+    finishGame?'จบรอบนี้แล้วเปิด Debrief โดยไม่เล่นรอบที่เหลือ':'จบรอบนี้และไปรอบถัดไป',
+    'การดำเนินการนี้ย้อนกลับไม่ได้'
+  ].join('\n');
+  if(!confirm(msg))return;
+  if(finishGame&&prompt('พิมพ์ FINISH เพื่อยืนยันจบเกม')!=='FINISH')return;
+  return withButtonBusy(btn,finishGame?'FINISHING…':'LOCKING…',async()=>{
+    try{
+      const result=await rpc('bcp_web_admin_override',{
+        p_room_id:state.room.id,p_session_token:adminToken(),p_action:finishGame?'finish_game':'end_round'
+      });
+      if(result?.all_ready)toast(finishGame?'Simulation จบแล้ว':'Admin All Ready 7/7 · Round '+round+' จบแล้ว','success');
+      await refresh();
+    }catch(e){toast(errText(e),'error');}
+  });
+}
 async function toggleReady(btn){
   return withButtonBusy(btn,state.me.ready_to_lock?'กำลังยกเลิก…':'กำลัง Ready…',async()=>{
     try{
