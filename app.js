@@ -549,6 +549,7 @@ function game(){
   });
 
   startClock();
+  requestAnimationFrame(()=>document.querySelector('.game-dashboard')?.classList.toggle('sticky-compact',window.scrollY>190));
 
 }
 
