@@ -15,7 +15,7 @@ const mock={
     twist_story:'เวลา 14.05 น. เกิดฟ้าผ่าบริเวณสายส่ง ทำให้ระบบไฟฟ้าสะดุดและต้องประเมินการฟื้นฟูการผลิต'},
   players:['CMC','CMD_HO','CMD_PPD','CMD_NKL','CMT_HO','CMT_PPD','CMT_NKL'].map((role,i)=>({role,ready:i<4,online:true,virtual:i>1})),
   actions:Array.from({length:16},(_,i)=>({site:['HO','PPD','NKL'][i%3],chp_code:'CHP-'+(i%3+4),title:'ตรวจสอบมาตรการอาคารและความพร้อมงานทางไกล ตามสถานการณ์ที่เกิดขึ้นในพื้นที่',position:i+1,cash_cost:85000,role:'CMT'})),
-  results:[{round:1,bc_loss:12,bc_after:88,cash_used:1200000,cash_after:9800000,outcome:'ควบคุมเหตุการณ์ได้ แต่มีช่องว่างบางส่วนในการตอบสนอง'}],
+  results:[{round:1,bc_loss:12,bc_after:88,cash_used:1200000,cash_after:9800000,outcome:'ควบคุมเหตุการณ์ได้ แต่มีช่องว่างบางส่วนในการตอบสนอง',scoring:{round_cap:30,expected_chps:[{site:'HO',chp_code:'CHP-4',actual_level:2,chp_loss:12,missing_loss:12,wasted_loss:0,missing_cards:['HO:CHP-4:1'],wasted_cards:[]},{site:'PPD',chp_code:'CHP-8',actual_level:1,chp_loss:0,missing_cards:[],wasted_cards:[]},{site:'NKL',chp_code:'CHP-4',actual_level:1,chp_loss:0,missing_cards:[],wasted_cards:[]}],extra_chps:[]},action_titles:{'HO:CHP-4:1':'Action ที่ขาดจาก HO'}}],
   events:Array.from({length:12},(_,i)=>({id:i+1,at:new Date(Date.now()-i*10000).toISOString(),round:2,type:i===0?'twist_revealed':'action_played',site:'HO',chp:'CHP-4',title:'ประเมินความพร้อมทางไกล',role:'CMD_HO'}))
 };
 const mimetypes={'.html':'text/html;charset=utf-8','.css':'text/css;charset=utf-8','.js':'text/javascript;charset=utf-8','.webp':'image/webp'};
@@ -53,6 +53,9 @@ const run=async()=>{
         eventCount:document.querySelectorAll('.event-row').length,
         siteCount:document.querySelectorAll('.site-board').length,
         archiveCount:document.querySelectorAll('.archive-round').length,
+        diagnosticCount:document.querySelectorAll('.round-explanation .scoring-group').length,
+        diagnosticCap:document.querySelector('.round-explanation .cap-explainer')?.textContent,
+        missingShown:document.querySelector('.round-explanation')?.textContent.includes('Action ที่ขาดจาก HO'),
         readinessCount:document.querySelectorAll('.readiness-panel').length,
         hasResponseText:document.body.textContent.includes('TEAM RESPONSE'),
         hasEventText:document.body.textContent.includes('LIVE EVENT FEED'),
@@ -68,6 +71,9 @@ const run=async()=>{
       assert.equal(errors.length,0,'No JS errors: '+errors.join(';'));
       assert.equal(values.siteCount,0,'Projector must not reveal site boards');
       assert.equal(values.archiveCount,4,'Show four historical round slots');
+      assert.ok(values.diagnosticCount>0,'Show detailed finished-round deduction');
+      assert.ok(values.diagnosticCap.includes('30 BC'),'Show per-Round BC cap');
+      assert.ok(values.missingShown,'Show missed action name after lock');
       assert.equal(values.readinessCount,1,'Readiness is visible');
       assert.equal(values.kpiCount,4);
       assert.equal(values.eventCount,0,'No live event feed');
