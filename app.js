@@ -708,56 +708,6 @@ async function recoverRole(btn){
     }catch(e){toast(errText(e),'error');}
   });
 }
-async function soloRevealTwistNow(btn){
-  if(!state?.room?.is_test_mode||!session?.adminToken)return toast('คำสั่งนี้ใช้ได้เฉพาะ Admin ใน Solo Test','error');
-  if(state.room.paused_at)return toast('Resume ห้องทดสอบก่อน','error');
-  return withButtonBusy(btn,'กำลังเปิด Twist…',async()=>{
-    try{
-      const result=await rpc('bcp_web_solo_reveal_twist_now',{
-        p_room_id:state.room.id,p_session_token:adminToken()
-      });
-      if(result?.reason==='NO_TWIST_THIS_ROUND'){
-        toast('รอบนี้ไม่มี Twist ตาม Scenario','success');
-      }else if(result?.already){
-        toast('Twist ถูกเปิดอยู่แล้ว','success');
-      }else{
-        toast('เปิด Twist แล้ว ตรวจและปรับการ์ดก่อนจบรอบได้','success');
-      }
-      await refresh();
-    }catch(e){toast(errText(e),'error');}
-  });
-}
-async function soloAllReadyAndEndRound(btn){
-  if(!state?.room?.is_test_mode||!session?.adminToken)return toast('คำสั่งนี้ใช้ได้เฉพาะ Admin ใน Solo Test','error');
-  if(state.room.paused_at)return toast('Resume ห้องทดสอบก่อน','error');
-  const round=state.room.current_round;
-  const active=(state.placements||[]).filter(p=>!p.removed_at).length;
-  const msg=[
-    'จบ Round '+round+' ตอนนี้เลยหรือไม่?',
-    '',
-    '• ระบบจะตั้ง READY ให้ Virtual Roles ทั้ง 7 อัตโนมัติ',
-    '• ใช้ Action '+active+' ใบที่อยู่บน Timeline คิดคะแนนจริง',
-    '• Action ที่ขาด/ลำดับผิดจะถูกหัก BC ตามกติกา',
-    '• ไม่สามารถย้อนกลับมาแก้ Round นี้ได้',
-    '',
-    'หาก Round มี Twist ต้องเปิด Twist ก่อนเพื่อให้ได้ทดสอบการตอบสนองครบ'
-  ].join('\n');
-  if(!confirm(msg))return;
-  return withButtonBusy(btn,'กำลัง Lock รอบและคำนวณคะแนน…',async()=>{
-    try{
-      const result=await rpc('bcp_web_solo_all_ready_and_lock',{
-        p_room_id:state.room.id,p_session_token:adminToken()
-      });
-      if(result?.all_ready){
-        toast('All Ready 7/7 · Round '+round+' ถูก Lock และคำนวณผลแล้ว','success');
-      }
-      await refresh();
-    }catch(e){
-      toast(errText(e),'error');
-    }
-  });
-}
-
 async function adminManualTwist(btn){
   if(!hasAdminControl())return toast('เฉพาะ Admin เท่านั้น','error');
   return withButtonBusy(btn,'REVEALING…',async()=>{
