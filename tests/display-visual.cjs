@@ -50,8 +50,13 @@ const run=async()=>{
       const values=await page.evaluate(()=>({
         documentWidth:document.documentElement.scrollWidth,
         viewportWidth:innerWidth,
-        siteCount:document.querySelectorAll('.site-board').length,
         eventCount:document.querySelectorAll('.event-row').length,
+        siteCount:document.querySelectorAll('.site-board').length,
+        archiveCount:document.querySelectorAll('.archive-round').length,
+        readinessCount:document.querySelectorAll('.readiness-panel').length,
+        hasResponseText:document.body.textContent.includes('TEAM RESPONSE'),
+        hasEventText:document.body.textContent.includes('LIVE EVENT FEED'),
+        hasPoisonAction:document.body.textContent.includes('ตรวจสอบมาตรการอาคารและความพร้อมงานทางไกล'),
         kpiCount:document.querySelectorAll('.kpi').length,
         privateDataVisible:document.body.textContent.includes('PRIVATE ACTION HAND'),
         accessInHash:location.hash.includes('token='),
@@ -61,18 +66,23 @@ const run=async()=>{
         cashLabels:document.querySelector('.kpi-cash small')?.textContent
       }));
       assert.equal(errors.length,0,'No JS errors: '+errors.join(';'));
-      assert.equal(values.siteCount,3);
+      assert.equal(values.siteCount,0,'Projector must not reveal site boards');
+      assert.equal(values.archiveCount,4,'Show four historical round slots');
+      assert.equal(values.readinessCount,1,'Readiness is visible');
       assert.equal(values.kpiCount,4);
-      assert.ok(values.eventCount>0);
+      assert.equal(values.eventCount,0,'No live event feed');
+      assert.equal(values.hasResponseText,false,'TEAM RESPONSE must be removed');
+      assert.equal(values.hasEventText,false,'LIVE EVENT FEED must be removed');
+      assert.equal(values.hasPoisonAction,false,'Injected private action must not render');
       assert.ok(values.documentWidth<=width+2,'No horizontal overflow at '+width+'px');
       assert.ok(!values.privateDataVisible,'No private role hands');
       assert.ok(!values.accessInHash,'Viewer bearer token scrubbed from address bar');
       assert.ok(values.fullscreenButton);
-      assert.ok(values.cash.includes('9,450,000'));
-      assert.ok(values.cashLabels.includes('RESERVED ฿1,550,000'));
-      assert.ok(values.cashLabels.includes('COMMITTED ฿11,000,000'));
+      assert.ok(values.cash.includes('11,000,000'),'Central cash is committed, not temporarily reserved');
+      assert.ok(!values.cashLabels.includes('RESERVED'),'Projector must not show provisional reservations');
+      assert.ok(values.cashLabels.includes('CONFIRMED AFTER ROUND LOCK'));
       await page.screenshot({path:path.join(screenshots,'display-'+width+'.png'),fullPage:true});
-      console.log('PASS central display',width+'x'+height,'3 sites / 4 KPIs / events / token hidden / no overflow');
+      console.log('PASS central display',width+'x'+height,'history / 4 KPIs / readiness / no private actions or events / token hidden / no overflow');
       await page.close();
     }
     console.log('CENTRAL DISPLAY REGRESSION PASS');
