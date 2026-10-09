@@ -175,3 +175,19 @@ Admin of a Solo Test room with exactly seven virtual role holders can use **All 
 If that scripted round contains an unrevealed Twist, this shortcut refuses to lock the round. The Admin can press **Reveal Twist Now** first (no need to wait for the countdown), adjust Actions after seeing the Twist, then press All Ready. Rounds without Twist can be ended immediately. A confirmation dialog warns that locking cannot be undone and that all real placements are scored.
 
 The two RPCs, `bcp_web_solo_reveal_twist_now` and `bcp_web_solo_all_ready_and_lock`, require an active admin token, an active and unpaused Solo Test room, and all seven roles assigned to active virtual (is_bot) members. These checks are enforced server-side; regular human multiplayer rooms cannot invoke the shortcuts even if the UI is modified. No gameplay/source scoring changes were made.
+
+## Cash lifecycle — Reserve / Release / Commit (2026-10-09)
+
+This rule replaces the former nonrefundable-on-placement behavior.
+
+- **Committed Cash** (`room.cash_remaining`) changes only at the server-authoritative round lock. It carries over into subsequent rounds.
+- **Reserved Cash** is the sum of non-removed `bcp_web_placements` for the *currently playing* round.
+- **Available Cash** = Committed Cash − Reserved Cash. The UI uses this balance to prevent over-allocation before a round lock.
+- **Place a card**: creates/reactivates an active placement; checks funds against Available Cash under a `FOR UPDATE` row lock on the room; Committed Cash remains unchanged.
+- **Remove before lock**: sets `removed_at`, releases its reservation immediately and restores Available Cash. Multiple removals do not refund twice.
+- **Re-place**: checks availability again, including when reactivating a previously removed placement.
+- **Lock / All Ready / Timeout**: the scoring procedure sums only placements still active, commits their Cash cost exactly once, stores `cash_used_round` and `cash_after`, and advances or completes the game transactionally.
+- Both `bcp_web_play_action_direct` and legacy `bcp_web_play_action` use the same reservation guard.
+- The player UI and Central Display expose `cash_available`, `cash_reserved`, and `cash_committed` separately, while `cash_remaining` remains the authoritative committed balance.
+- Previous completed rounds were intentionally not retroactively changed. At migration, any previous immediate charges within **playing** rounds were restored into Committed Cash once; those rounds now obey the reserve model going forward.
+- Regression QA: six scenario bot checks, operational, lifecycle; plus a disposable Solo Test round proving place → remove → re-place → round lock and a low-budget case proving over-allocation is refused.
