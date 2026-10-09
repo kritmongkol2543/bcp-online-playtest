@@ -346,10 +346,12 @@ async function startGame(btn){
 
 function storyHtml(){
   const s=state.story||{};
+  const canReadSiteBrief=Boolean(state.me?.role_key?.startsWith('CMT_'));
+
   const global=esc(s.big_story||'').replace(/\n/g,'<br>');
-  const local=esc(s.site_story||'').replace(/\n/g,'<br>');
-  const twist=esc([s.twist_story,s.site_twist_story].filter(Boolean).join('\n\n')).replace(/\n/g,'<br>');
-  return '<section class="panel story" id="situationPanel" aria-label="Situation brief"><div class="section-heading"><div class="section-heading-label"><span class="section-step">01</span><div><span class="eyebrow">SITUATION / ROUND '+state.room.current_round+'</span><h2>Situation Brief</h2><p>อ่านข้อมูลที่ได้รับและหารือกับทีม ก่อนเลือกการ์ดตอบสนอง</p></div></div>'+(state.room.twist_revealed?'<span class="badge danger">CRISIS UPDATE</span>':'<span class="badge brief-tag">LIVE ROUND</span>')+'</div><div class="brief-grid '+(!s.site_story?'brief-grid-single':'')+'"><div class="story-block"><div class="story-label"><span class="story-dot global"></span><b>GLOBAL BRIEF</b><small>ข้อมูลที่ทุก Role เห็นร่วมกัน</small></div><p>'+global+'</p></div>'+(s.site_story?'<div class="story-block site"><div class="story-label"><span class="story-dot site"></span><b>MY SITE BRIEF</b><small>ข้อมูลเฉพาะ Site ของคุณ</small></div><p>'+local+'</p></div>':'')+'</div>'+(s.twist_story||s.site_twist_story?'<div class="story-block twist" role="status"><div class="story-label"><span class="story-dot twist"></span><b>CRISIS UPDATE</b><small>เงื่อนไขล่าสุด</small></div><p>'+twist+'</p></div>':'')+'</section>';
+  const local=esc(canReadSiteBrief?s.site_story||'':'').replace(/\n/g,'<br>');
+  const twist=esc([s.twist_story,(canReadSiteBrief?s.site_twist_story:null)].filter(Boolean).join('\n\n')).replace(/\n/g,'<br>');
+  return '<section class="panel story" id="situationPanel" aria-label="Situation brief"><div class="section-heading"><div class="section-heading-label"><span class="section-step">01</span><div><span class="eyebrow">SITUATION / ROUND '+state.room.current_round+'</span><h2>Situation Brief</h2><p>อ่านข้อมูลที่ได้รับและหารือกับทีม ก่อนเลือกการ์ดตอบสนอง</p></div></div>'+(state.room.twist_revealed?'<span class="badge danger">CRISIS UPDATE</span>':'<span class="badge brief-tag">LIVE ROUND</span>')+'</div><div class="brief-grid '+((!canReadSiteBrief||!s.site_story)?'brief-grid-single':'')+'"><div class="story-block"><div class="story-label"><span class="story-dot global"></span><b>GLOBAL BRIEF</b><small>ข้อมูลที่ทุก Role เห็นร่วมกัน</small></div><p>'+global+'</p></div>'+(canReadSiteBrief&&s.site_story?'<div class="story-block site"><div class="story-label"><span class="story-dot site"></span><b>MY SITE BRIEF</b><small>ข้อมูลเฉพาะ Site ของคุณ</small></div><p>'+local+'</p></div>':'')+'</div>'+(s.twist_story||(canReadSiteBrief&&s.site_twist_story)?'<div class="story-block twist" role="status"><div class="story-label"><span class="story-dot twist"></span><b>CRISIS UPDATE</b><small>เงื่อนไขล่าสุด</small></div><p>'+twist+'</p></div>':'')+'</section>';
 }
 function statsHtml(){
   const ready=state.members.filter(m=>m.role_key&&m.ready_to_lock).length;
