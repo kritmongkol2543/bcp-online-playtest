@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const js=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
-const start=js.indexOf('function lobby(){'),end=js.indexOf('async function toggleSoloTest(btn){');
+const start=js.indexOf('function lobby(){'),end=js.indexOf('function syncRoleInvitation(){',start);
 assert.ok(start>=0&&end>start);
 let rendered='', synced=false;
 const roles=['CMC','CMD_HO','CMD_PPD','CMD_NKL','CMT_HO','CMT_PPD','CMT_NKL'];
