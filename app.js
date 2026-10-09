@@ -163,6 +163,7 @@ function topbar(extra=''){
 function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
 
 function landing(){
+  document.getElementById('roleInviteOverlay')?.remove();
   stopRealtime(); state=null;
   shell('<main class="landing"><section class="hero panel"><div class="learning-band"><span></span>TCCC LEARNING LAB · TEAM CRISIS SIMULATION</div><span class="eyebrow">BUSINESS CONTINUITY / ONLINE PLAYTEST</span><h1>ตัดสินใจ<br>เมื่อข้อมูลไม่ครบ</h1><p>เกมจำลองการรับมือวิกฤตสำหรับ 7 บทบาท แต่ละคนมีข้อมูลและการ์ดเฉพาะตัว ก่อนร่วมกันตัดสินใจบน Shared Timeline</p><div class="hero-grid"><div><small>01</small><b>7 Roles</b><span>CMC · CMD ×3 · CMT/LRTs ×3</span></div><div><small>02</small><b>4 Rounds</b><span>Scenario → Decision → Twist → Lock</span></div><div><small>03</small><b>Realtime</b><span>Private CHP Decks → Shared Timeline</span></div></div></section><section class="panel join-panel"><div class="join-kicker">ENTER SIMULATION</div><div class="tabs"><button id="tabJoin" class="tab active">Join Room</button><button id="tabCreate" class="tab">Create Room</button></div><div id="joinForm"><label>ชื่อผู้เล่น<input id="playerName" maxlength="60" placeholder="ชื่อที่ใช้ในเกม"></label><label>Room Code<input id="roomCode" maxlength="6" class="code-input" placeholder="ABC123"></label><button id="joinBtn" class="btn primary">JOIN ROOM</button></div><div id="createForm" hidden><label>ชื่อผู้ดูแลห้อง<input id="adminName" maxlength="60" placeholder="ชื่อที่ใช้ดูแลห้อง"></label><label>ชื่อห้อง<input id="roomTitle" maxlength="100" value="BCP Online Playtest"></label><button id="createBtn" class="btn primary">CREATE ROOM</button></div>'+(session?'<button id="resumeBtn" class="btn ghost full">RESUME SESSION</button>':'')+'</section></main>');
   $('#tabJoin').onclick=()=>{ $('#joinForm').hidden=false; $('#createForm').hidden=true; $('#tabJoin').classList.add('active'); $('#tabCreate').classList.remove('active'); };
@@ -221,6 +222,7 @@ function render(){
   game();
 }
 function closedRoom(){
+  document.getElementById('roleInviteOverlay')?.remove();
   stopRealtime();
   const reason={
     last_participant_left:'ผู้เล่นคนสุดท้ายออกจากห้อง',
@@ -303,6 +305,8 @@ function openChpGuideModal(guide){
   modal.querySelector('.guide-close').onclick=close;
   modal.querySelector('.guide-done').onclick=close;
   modal.onclick=e=>{if(e.target===modal)close();};
+  modal.onkeydown=e=>{if(e.key==='Escape')close();};
+  modal.querySelector('.guide-close').focus({preventScroll:true});
 }
 const chpGuideCache=new Map();
 async function showChpGuide(chp,button){
@@ -501,6 +505,7 @@ function teamHtml(){
   return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+adminOverride+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
 function game(){
+  document.getElementById('roleInviteOverlay')?.remove();
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">EXIT</button>';
   shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+workflowHtml()+storyHtml()+'<div class="play-workspace"><div class="play-hand-col">'+handHtml()+'</div><div class="play-timeline-col">'+decksHtml()+'</div></div></div>'+teamHtml()+'</div></main>',extra);
@@ -968,6 +973,7 @@ async function savePlaytestFeedback(btn){
 }
 
 async function debrief(){
+  document.getElementById('roleInviteOverlay')?.remove();
   stopRealtime();
   shell('<main class="page"><section class="panel" style="padding:26px"><span class="eyebrow">SIMULATION COMPLETE</span><h1>Debrief & Replay</h1><p>กำลังโหลด Debrief…</p></section></main>','<button id="leaveBtn" class="btn small ghost">EXIT</button>');
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
