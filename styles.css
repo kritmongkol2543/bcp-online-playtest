@@ -2354,3 +2354,64 @@ body{
 .admin-override #adminTwistBtn{background:#fff;color:#29469b;border-color:#a8b8e2}
 .admin-override #adminReadyAllBtn{background:#29469b;color:#fff;border-color:#29469b}
 .admin-override #adminFinishBtn{background:#fff0f2;color:#a73444;border:1px solid #efb8bd}
+
+/* Role consent and private CHP reference overlays. */
+.private-deck-wrapper{position:relative;min-width:0}
+.private-deck-wrapper>.private-deck-card{width:100%;height:100%;padding-right:33px;text-align:left}
+.private-deck-wrapper .deck-info-btn{
+  position:absolute;right:9px;top:10px;z-index:2;
+  display:grid;place-items:center;
+  width:25px;height:25px;padding:0;
+  border:1px solid #b4c7e4;border-radius:50%;
+  background:#fff;color:#244b99;font-size:15px;
+  line-height:1;font-weight:800;
+  transition:background .18s ease,transform .18s ease;
+}
+.deck-info-btn:hover{background:#dce8ff;transform:scale(1.06)}
+.deck-info-btn:focus-visible{outline:3px solid #f3c64e;outline-offset:2px}
+.role-card.role-pending{border-color:#edc878;background:#fffcf2}
+.role-card .role-awaiting{display:flex;gap:6px;align-items:center;color:#986714;font-weight:800;font-size:11px}
+.role-card .role-pending-person{display:block;margin-top:4px;color:#63728d;font-size:11px}
+.role-card .role-confirmed{color:#1c7b60;font-weight:750;font-size:11px}
+.wait-pulse{width:7px;height:7px;border-radius:50%;background:#d99e23;animation:role-wait-pulse 1.8s ease-in-out infinite}
+@keyframes role-wait-pulse{50%{opacity:.3;transform:scale(.85)}}
+.bcp-guide-overlay{
+  position:fixed;inset:0;z-index:99999;
+  padding:24px;display:flex;justify-content:center;align-items:center;
+  background:rgba(10,20,43,.66);backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+.bcp-guide-modal{
+  width:min(640px,100%);max-height:min(88dvh,830px);
+  overflow-y:auto;overscroll-behavior:contain;
+  border-radius:23px;background:#fff;color:#22324d;
+  border:1px solid #dfe6f4;
+  padding:clamp(20px,3vw,32px);
+  box-shadow:0 27px 85px rgba(6,16,45,.3);
+  font-family:"Google Sans","Noto Sans Thai",sans-serif;
+}
+.bcp-guide-modal h2{font-size:clamp(22px,3vw,30px);margin:9px 0 10px;line-height:1.35;color:#1a3671}
+.bcp-guide-modal h3{font-size:17px;color:#304e82;line-height:1.4}
+.bcp-guide-modal>small,.guide-topline small{display:block;font-size:12px;color:#627da7;font-weight:750;letter-spacing:.03em}
+.bcp-guide-modal>p{line-height:1.75;margin:12px 0;color:#3f5070;font-size:15px}
+.bcp-guide-modal .guide-lead{background:#f2f5ff;border-radius:14px;padding:14px 16px;color:#344966}
+.guide-topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.guide-close{display:grid;place-items:center;width:33px;height:33px;background:#f0f3fa;border:1px solid #d9e2f1;border-radius:50%;color:#29477f;font-size:23px;cursor:pointer}
+.bcp-guide-modal ul{padding-left:23px;margin:14px 0 19px}
+.bcp-guide-modal li{font-size:14px;line-height:1.75;margin:8px 0;color:#354766}
+.bcp-guide-modal .guide-source{color:#71819c;font-size:11px;padding-top:12px;border-top:1px solid #e4eaf4}
+.guide-actions,.guide-footer{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  border-top:1px solid #e6e9f2;padding-top:17px;margin-top:16px
+}
+.guide-actions span,.guide-footer small{font-size:12px;color:#70809a;line-height:1.5;flex:1}
+.guide-actions .btn,.guide-footer .btn{min-height:43px}
+@media(max-width:600px){
+  .bcp-guide-overlay{padding:10px;align-items:flex-end}
+  .bcp-guide-modal{border-radius:23px 23px 14px 14px;padding:20px;max-height:90dvh}
+  .guide-actions,.guide-footer{flex-direction:column;align-items:stretch}
+  .guide-actions .btn,.guide-footer .btn{width:100%}
+  .private-deck-wrapper>.private-deck-card{padding-right:29px}
+  .private-deck-wrapper .deck-info-btn{right:6px;top:8px}
+}
+@media(prefers-reduced-motion:reduce){.wait-pulse{animation:none}}
