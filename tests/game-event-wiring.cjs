@@ -8,7 +8,7 @@ const start = source.indexOf('function game(){');
 const end = source.indexOf('function availableSitesForCard(', start);
 assert.ok(start >= 0 && end > start, 'game() source must exist');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-assert.ok(html.includes('app.js?v=20261103.2'), 'HTML must invalidate stale gameplay JavaScript');
+assert.ok(html.includes('app.js?v=20261103.4'), 'HTML must invalidate stale gameplay JavaScript');
 
 
 let clockStarts = 0;
