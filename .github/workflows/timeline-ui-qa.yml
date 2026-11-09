@@ -38,6 +38,8 @@ jobs:
         run: node tests/role-consent-guides.cjs
       - name: Verify player game event wiring and clock initialization
         run: node tests/game-event-wiring.cjs
+      - name: Browser interaction, realtime and responsive regression
+        run: node tests/gameplay-browser.cjs
       - name: Verify Admin Override for live and Solo Test rooms
         run: node tests/admin-override.cjs
       - name: Verify private Site Brief only shows to CMT/LRTs
