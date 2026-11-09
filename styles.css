@@ -2415,3 +2415,49 @@ body{
   .private-deck-wrapper .deck-info-btn{right:6px;top:8px}
 }
 @media(prefers-reduced-motion:reduce){.wait-pulse{animation:none}}
+
+
+/* Gameplay stability and zoom accessibility — 2026-11-09.
+   One vertical timeline scroller avoids fighting inner scroll regions when
+   placing an Action on a Site with many existing cards. */
+.play-timeline-col .site-columns{
+  scroll-behavior:auto;
+  overscroll-behavior-y:contain;
+}
+.play-timeline-col .site-dropzone{
+  max-height:none;
+  overflow:visible;
+  overscroll-behavior:auto;
+  transition:background-color .12s ease,border-color .12s ease;
+}
+.play-timeline-col .site-dropzone.dragover{
+  border:2px solid var(--blue);
+  background:#e8f1ff;
+  outline:2px solid rgba(41,70,155,.18);
+  outline-offset:1px;
+}
+.game-layout .cards-reveal{animation:none}
+.game-layout .action-card:hover:not(.used){transform:none}
+.card-place-btn{min-height:44px}
+.play-timeline-col .placed-controls .icon-btn{
+  width:38px;height:38px;min-width:38px;min-height:38px;
+}
+.admin-member{border-color:#d4def2!important;background:#f5f8ff!important}
+.admin-member b{color:#25478b}
+@media(max-width:1100px){
+  .game-dashboard{position:static;top:auto;backdrop-filter:none}
+  .game-dashboard .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .play-workspace{grid-template-columns:minmax(0,1fr)}
+  .play-timeline-col,.team-panel{position:static;top:auto;max-height:none}
+  .play-timeline-col .decision{max-height:none;overflow:visible}
+  .play-timeline-col .site-columns{max-height:none;overflow:visible}
+}
+@media(max-width:430px){
+  .play-timeline-col .placed-card{grid-template-columns:25px minmax(0,1fr) max-content;column-gap:5px;padding:7px 5px}
+  .play-timeline-col .placed-controls .icon-btn{
+    width:36px;height:38px;min-width:36px;min-height:38px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .play-timeline-col .site-dropzone{transition:none}
+}
