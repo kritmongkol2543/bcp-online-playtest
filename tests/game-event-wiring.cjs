@@ -8,7 +8,7 @@ const start = source.indexOf('function game(){');
 const end = source.indexOf('function availableSitesForCard(', start);
 assert.ok(start >= 0 && end > start, 'game() source must exist');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-assert.ok(html.includes('app.js?v=20261103.4'), 'HTML must invalidate stale gameplay JavaScript');
+assert.ok(html.includes('app.js?v=20261109.1'), 'HTML must invalidate stale gameplay JavaScript');
 assert.ok(source.includes('<option value="3" selected>ARV-29 v8'), 'ARV-29 must be default scenario preset');
 assert.ok(source.includes('Number(state.room.scenario_set)===3&&Number(state.room.current_round)===3'), 'ARV-29 R3 escalation must stay facilitator controlled');
 assert.ok(source.includes('p_starting_cash:+$(\'#startingCash\').value'), 'Starting Cash remains admin-controlled');
