@@ -73,6 +73,9 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
     window.__qaScroll=window.scrollY;
    },fixture);
    assert.match((await page.locator('#clock').textContent()).trim(),/^\d{2}:\d{2}$/);
+   // Let initial browser layout/connection badge settle before measuring sync drift.
+   await page.waitForTimeout(100);
+   await page.evaluate(async()=>{await refresh();window.scrollTo(0,Math.min(350,document.body.scrollHeight-innerHeight));window.__qaScroll=window.scrollY;});
    for(let i=0;i<5;i++)await page.evaluate(async()=>{window.__qaState.server_now=new Date().toISOString();await refresh();});
    const stability=await page.evaluate(()=>({
     sameDeck:window.__qaDeck===document.querySelector('#privateDeck'),
