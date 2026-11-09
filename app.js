@@ -530,7 +530,34 @@ function game(){
   document.getElementById('roleInviteOverlay')?.remove();
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
   const extra=soloSwitcher()+'<span class="role-pill">'+esc(viewLabel)+'</span><button id="leaveBtn" class="btn small ghost">EXIT</button>';
-  shell('<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+workflowHtml()+storyHtml()+'<div class="play-workspace"><div class="play-hand-col">'+handHtml()+'</div><div class="play-timeline-col">'+decksHtml()+'</div></div></div>'+teamHtml()+'</div></main>',extra);
+  const gameKey=[state.room.id,state.room.current_round,state.me.role_key,hasAdminControl(),!!state.room.paused_at,(state.round_results||[]).length].join('|');
+  if(renderedGameKey===gameKey&&draggingAction){
+    pendingGameRender=true;
+    return;
+  }
+  const gameMarkup='<main class="page">'+consequenceHtml()+statsHtml()+(state.room.paused_at?'<div class="pause-banner"><b>GAME PAUSED</b><span>Timer และการเปลี่ยน Decision ถูกหยุดชั่วคราว — Admin Resume เพื่อเล่นต่อ</span></div>':'')+'<div class="game-layout"><div class="main-stack">'+workflowHtml()+storyHtml()+'<div class="play-workspace"><div class="play-hand-col">'+handHtml()+'</div><div class="play-timeline-col">'+decksHtml()+'</div></div></div>'+teamHtml()+'</div></main>';
+  const sameRound=renderedGameKey===gameKey&&!!document.querySelector('#app .game-layout');
+  if(sameRound){
+    const holder=document.createElement('div');
+    holder.innerHTML=gameMarkup;
+    const beforeY=window.scrollY;
+    for(const selector of ['.stat-cash','.game-dashboard .stats>div:nth-child(3)','.stat-ready','.workflow-guide','#situationPanel','#privateDeck','#sharedTimeline','.team-panel']){
+      const old=document.querySelector(selector),next=holder.querySelector(selector);
+      if(!old||!next||old.outerHTML===next.outerHTML)continue;
+      const selectors=selector==='#sharedTimeline'?['.site-columns','[data-site-drop]']:['.member-list'];
+      const positions=selectors.flatMap(q=>[...old.querySelectorAll(q)].map((el,i)=>({q,i,site:el.dataset.siteDrop,top:el.scrollTop,left:el.scrollLeft})));
+      old.replaceWith(next);
+      for(const pos of positions){
+        const entries=[...next.querySelectorAll(pos.q)];
+        const target=pos.site?entries.find(x=>x.dataset.siteDrop===pos.site):entries[pos.i];
+        if(target){target.scrollTop=pos.top;target.scrollLeft=pos.left;}
+      }
+    }
+    if(Math.abs(window.scrollY-beforeY)>2)window.scrollTo(0,beforeY);
+  }else{
+    shell(gameMarkup,extra);
+    renderedGameKey=gameKey;
+  }
 
   $('#leaveBtn').onclick=e=>leave(e.currentTarget);
   const consequenceDone=$('#consequenceDone');
@@ -626,7 +653,7 @@ function game(){
     };
   });
 
-  startClock();
+  if(!sameRound||!clockTimer)startClock();
   requestAnimationFrame(()=>document.querySelector('.game-dashboard')?.classList.toggle('sticky-compact',window.scrollY>190));
 
 }
