@@ -51,6 +51,7 @@ let renderedGameKey=null;
 let draggingAction=false;
 let pendingGameRender=false;
 let queuedRefresh=false;
+let queuedFirstRefresh=false;
 let realtimeDebounceTimer=null;
 
 function saveSession(v){ session=v; v?localStorage.setItem(STORE,JSON.stringify(v)):localStorage.removeItem(STORE); }
@@ -208,11 +209,17 @@ async function joinRoom(btn){
 
 async function refresh(first=false){
   if(!session)return;
-  if(busy){queuedRefresh=true;return;}
+  if(busy){queuedRefresh=true;queuedFirstRefresh=queuedFirstRefresh||first;return;}
   busy=true;
+  const requestedRoom=session.roomId,requestedToken=session.token;
   const previousState=state;
   try{
-    state=await rpc('bcp_web_get_state',{p_room_id:session.roomId,p_session_token:session.token});
+    const nextState=await rpc('bcp_web_get_state',{p_room_id:requestedRoom,p_session_token:requestedToken});
+    if(!session||session.roomId!==requestedRoom||session.token!==requestedToken){
+      queuedRefresh=true;queuedFirstRefresh=true;
+      return; // old session reply must never overwrite the newly selected Role
+    }
+    state=nextState;
     if(previousState?.room?.id===state?.room?.id &&
        previousState?.room?.current_round===state?.room?.current_round &&
        previousState?.me?.ready_to_lock && !state?.me?.ready_to_lock &&
@@ -233,7 +240,11 @@ async function refresh(first=false){
     if(first){ toast('Session ใช้งานไม่ได้: '+errText(e),'error'); saveSession(null); landing(); }
   }finally{
     busy=false;
-    if(queuedRefresh){queuedRefresh=false;setTimeout(()=>refresh(),100);}
+    if(queuedRefresh){
+      const retryFirst=queuedFirstRefresh;
+      queuedRefresh=false;queuedFirstRefresh=false;
+      setTimeout(()=>refresh(retryFirst),100);
+    }
   }
 }
 function render(){
