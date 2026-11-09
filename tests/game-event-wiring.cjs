@@ -23,6 +23,7 @@ const leave = {onclick:null};
 const context = {
   state:{room:{paused_at:null,current_round:1},me:{role_key:'CMT_HO'}},
   session:{}, ROLE_LABEL:{CMT_HO:'CMT / LRTs HO'}, selectedChp:null, selectedCard:null,
+  renderedGameKey:null, draggingAction:false, pendingGameRender:false, clockTimer:null,
   esc:value=>String(value ?? ''),
   hasAdminControl:()=>false,
   soloSwitcher:()=>'', consequenceHtml:()=>'', statsHtml:()=>'',
