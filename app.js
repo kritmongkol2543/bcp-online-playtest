@@ -47,6 +47,11 @@ let serverOffsetMs = 0;
 let connectionState = navigator.onLine ? 'connecting' : 'offline';
 let pendingRequests = 0;
 let clockActionPending=false;
+let renderedGameKey=null;
+let draggingAction=false;
+let pendingGameRender=false;
+let queuedRefresh=false;
+let realtimeDebounceTimer=null;
 
 function saveSession(v){ session=v; v?localStorage.setItem(STORE,JSON.stringify(v)):localStorage.removeItem(STORE); }
 function requestStarted(){
@@ -165,7 +170,7 @@ function topbar(extra=''){
     ?'<button class="btn small display-launch" type="button" data-open-central-display title="เปิดหน้าจอภาพรวมสำหรับจอกลาง">◩ CENTRAL DISPLAY ↗</button><button class="btn small ghost display-revoke" type="button" data-stop-central-display title="ยกเลิกสิทธิ์จอกลางที่เปิดอยู่">REVOKE</button>':'';
   return '<header class="topbar"><div class="brand"><img class="brand-logo" src="./assets/tccc-learning-lab.webp" alt="TCCC Learning Lab"><div class="brand-product"><b>BCP PLAYTEST</b><small>Business Continuity Simulation</small></div></div><div class="top-actions">'+connectionBadge()+displayButton+extra+'</div></header>';
 }
-function shell(html,extra=''){ $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
+function shell(html,extra=''){ renderedGameKey=null; $('#app').innerHTML='<div class="shell">'+topbar(extra)+html+'</div>'; }
 
 function landing(){
   document.getElementById('roleInviteOverlay')?.remove();
@@ -202,10 +207,19 @@ async function joinRoom(btn){
 }
 
 async function refresh(first=false){
-  if(!session||busy) return;
+  if(!session)return;
+  if(busy){queuedRefresh=true;return;}
   busy=true;
+  const previousState=state;
   try{
     state=await rpc('bcp_web_get_state',{p_room_id:session.roomId,p_session_token:session.token});
+    if(previousState?.room?.id===state?.room?.id &&
+       previousState?.room?.current_round===state?.room?.current_round &&
+       previousState?.me?.ready_to_lock && !state?.me?.ready_to_lock &&
+       state?.room?.status==='playing'){
+      const changedTwist=!previousState.room.twist_revealed&&state.room.twist_revealed;
+      toast(changedTwist?'CRISIS UPDATE เปิดแล้ว · ต้องยืนยัน Ready อีกครั้ง':'Action หรือแผนทีมมีการเปลี่ยนแปลง · ระบบยกเลิก Ready เพื่อให้ทุก Role ตรวจใหม่','warning');
+    }
     if(state?.server_now) serverOffsetMs=new Date(state.server_now).getTime()-Date.now();
     if(selectedChp && !(state.hand||[]).some(c=>c.chp_code===selectedChp)){
       selectedChp=null;
@@ -217,7 +231,10 @@ async function refresh(first=false){
   }catch(e){
     setConnectionState(navigator.onLine?'degraded':'offline');
     if(first){ toast('Session ใช้งานไม่ได้: '+errText(e),'error'); saveSession(null); landing(); }
-  }finally{ busy=false; }
+  }finally{
+    busy=false;
+    if(queuedRefresh){queuedRefresh=false;setTimeout(()=>refresh(),100);}
+  }
 }
 function render(){
   if(!state) return landing();
@@ -1054,10 +1071,14 @@ async function heartbeat(){
     }
   }
 }
+function scheduleRealtimeRefresh(){
+  if(realtimeDebounceTimer)return;
+  realtimeDebounceTimer=setTimeout(()=>{realtimeDebounceTimer=null;refresh();},200);
+}
 function startRealtime(){
   stopRealtime(false);
   channel=sb.channel('bcp-room-'+session.roomId)
-    .on('postgres_changes',{event:'*',schema:'public',table:'bcp_web_live_signals',filter:'room_id=eq.'+session.roomId},()=>setTimeout(()=>refresh(),120))
+    .on('postgres_changes',{event:'*',schema:'public',table:'bcp_web_live_signals',filter:'room_id=eq.'+session.roomId},scheduleRealtimeRefresh)
     .subscribe(status=>{
       if(status==='SUBSCRIBED') setConnectionState('online');
       else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED') setConnectionState(navigator.onLine?'degraded':'offline');
@@ -1067,6 +1088,7 @@ function startRealtime(){
   heartbeat();
 }
 function stopRealtime(clearClock=true){
+  if(realtimeDebounceTimer){clearTimeout(realtimeDebounceTimer);realtimeDebounceTimer=null;}
   if(channel){sb.removeChannel(channel);channel=null;}
   if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
