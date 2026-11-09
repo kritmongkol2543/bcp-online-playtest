@@ -213,7 +213,7 @@ function gameplayFingerprint(data){
   // any visible game decision or control, and should never rebuild the UI.
   return JSON.stringify({
     ...data,server_now:null,
-    room:{...data.room,revision:null},
+    room:{...data.room,revision:data.room.status==='completed'?data.room.revision:null},
     members:(data.members||[]).map(m=>({...m,last_seen_at:null}))
   });
 }
@@ -243,10 +243,14 @@ async function refresh(first=false){
       selectedCard=null;
     }
     setConnectionState('online');
-    const viewMatches=state?.room?.status==='playing'&&
-      renderedGameKey===[state.room.id,state.room.current_round,state.me?.role_key,
-        hasAdminControl(),!!state.room.paused_at,(state.round_results||[]).length].join('|');
-    if(!(viewMatches&&previousState?.room?.status==='playing'&&
+    const kind=state?.room?.status;
+    const viewMatches=kind==='playing'
+      ?renderedGameKey===[state.room.id,state.room.current_round,state.me?.role_key,
+        hasAdminControl(),!!state.room.paused_at,(state.round_results||[]).length].join('|')
+      :kind==='lobby'?!!document.querySelector('#app .lobby-grid')
+      :kind==='completed'?!!document.querySelector('#app .debrief-page')
+      :false;
+    if(!(viewMatches&&previousState?.room?.status===kind&&
       previousState.room.id===state.room.id&&
       gameplayFingerprint(previousState)===gameplayFingerprint(state))){
       render();
