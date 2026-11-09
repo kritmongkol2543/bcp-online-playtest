@@ -526,6 +526,13 @@ function teamHtml(){
   const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ READY · UNDO':'READY TO LOCK')+'</button><p class="muted small-text">ระบบจะ Lock รอบเมื่อ Ready ครบ 7 Role หรือเมื่อหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>Admin ไม่ถูกนับเป็นผู้เล่นทั้ง 7 Role และไม่ต้องกด Ready</span></div>';
   return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+adminOverride+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
+function finishActionDrag(){
+  draggingAction=false;
+  if(pendingGameRender){
+    pendingGameRender=false;
+    requestAnimationFrame(()=>render());
+  }
+}
 function game(){
   document.getElementById('roleInviteOverlay')?.remove();
   const viewLabel=state.me.role_key?ROLE_LABEL[state.me.role_key]:(hasAdminControl()?'ADMIN CONSOLE':'Waiting Role');
@@ -600,9 +607,11 @@ function game(){
     c.ondragstart=e=>{
       if(state.room.paused_at||c.classList.contains('used')){e.preventDefault();return;}
       selectedCard=c.dataset.card;
+      draggingAction=true;
       e.dataTransfer.effectAllowed='copy';
       e.dataTransfer.setData('application/x-bcp-card',c.dataset.card);
     };
+    c.ondragend=finishActionDrag;
   });
 
   $$('[data-quick-place]').forEach(b=>b.onclick=e=>{
@@ -613,19 +622,32 @@ function game(){
   $$('.placed-card').forEach(c=>{
     c.ondragstart=e=>{
       e.stopPropagation();
+      draggingAction=true;
       e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('application/x-bcp-placement',JSON.stringify({id:c.dataset.place,deck:c.dataset.deck}));
     };
+    c.ondragend=finishActionDrag;
     c.ondragover=e=>e.preventDefault();
     c.ondrop=e=>{
-      e.preventDefault();
-      e.stopPropagation();
       const raw=e.dataTransfer.getData('application/x-bcp-placement');
       if(raw){
+        e.preventDefault();
+        e.stopPropagation();
         try{
           const from=JSON.parse(raw);
           if(from.deck===c.dataset.deck)reorderPlacement(from.deck,from.id,c.dataset.place);
         }catch{}
+        return;
+      }
+      // Dropping a NEW Action onto an existing row must still place it at that Site.
+      // Previously stopPropagation() swallowed the drop whenever a Site had cards.
+      const key=e.dataTransfer.getData('application/x-bcp-card')||selectedCard;
+      const site=c.closest('[data-site-drop]')?.dataset.siteDrop;
+      const card=cardByKey(key);
+      if(card&&site&&validTargetSites(card).includes(site)){
+        e.preventDefault();
+        e.stopPropagation();
+        placeCard(key,site,null);
       }
     };
   });
@@ -639,7 +661,7 @@ function game(){
       e.preventDefault();
       zone.classList.add('dragover');
     };
-    zone.ondragleave=()=>zone.classList.remove('dragover');
+    zone.ondragleave=e=>{if(!e.relatedTarget||!zone.contains(e.relatedTarget))zone.classList.remove('dragover');};
     zone.ondrop=e=>{
       e.preventDefault();
       zone.classList.remove('dragover');
