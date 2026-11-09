@@ -29,7 +29,7 @@
   background:var(--canvas);
 }
 *{box-sizing:border-box}
-html{background:var(--canvas);scroll-behavior:smooth}
+html{background:var(--canvas);scroll-behavior:auto}
 body{
   margin:0;
   min-height:100vh;
