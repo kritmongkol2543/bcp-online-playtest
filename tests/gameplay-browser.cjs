@@ -11,7 +11,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const browser=await chromium.launch({headless:true});
  try{
-  for(const width of [390,960,1440]){
+  for(const width of [320,375,390,768,960,1100,1440,1920]){
    const page=await browser.newPage({viewport:{width,height:900}});
    const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
@@ -28,7 +28,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
        const card=window.__qaState.hand.find(c=>c.card_key===args.p_card_key);
        window.__qaState.placements.push({id:'placed-new',deck_id:'deck-nkl',site:args.p_site,
         card_key:card.card_key,title:card.title,role:card.role,chp_code:card.chp_code,
-        position:2,placed_by_member_id:'p6',cash_cost:card.cash_cost});
+        position:window.__qaState.placements.length+1,placed_by_member_id:'p6',cash_cost:card.cash_cost});
        window.__qaState.room.cash_reserved+=card.cash_cost;
        window.__qaState.room.cash_available-=card.cash_cost;
        return {data:{ok:true},error:null};
@@ -48,8 +48,8 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
    await page.addScriptTag({content:script});
    const fixture={room:{id:'room-qa',code:'TEST01',status:'playing',current_round:1,
      scenario_set:3,round_ends_at:new Date(Date.now()+200000).toISOString(),
-     paused_at:null,twist_revealed:false,twist_reveal_at:null,cash_available:10990000,
-     cash_remaining:11000000,cash_reserved:10000,cash_committed:11000000,
+     paused_at:null,twist_revealed:false,twist_reveal_at:null,cash_available:10910000,
+     cash_remaining:11000000,cash_reserved:90000,cash_committed:11000000,
      business_continuity:100},me:{id:'p6',role_key:'CMT_NKL',is_admin:false,ready_to_lock:false},
      members:[{id:'a0',display_name:'Facilitator',is_admin:true,role_key:null,online:true,is_bot:false,ready_to_lock:false},
       ...roles.map((role_key,i)=>({id:'p'+i,role_key,display_name:'Player '+i,
@@ -57,9 +57,9 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
      story:{big_story:'BCP ARV29 exercise',site_story:'NKL local exercise'},
      hand:[2,3].map(n=>({card_key:'Factory:CHP-4:'+n,chp_code:'CHP-4',title:'Card '+n,
        detail:'Exercise action card',role:'CMT',cash_cost:10000})),
-     placements:[{id:'placed-1',deck_id:'deck-nkl',site:'NKL',
-       card_key:'Factory:CHP-4:2',title:'Card 2',role:'CMT',chp_code:'CHP-4',
-       position:1,placed_by_member_id:'p6',cash_cost:10000}],
+     placements:Array.from({length:9},(_,i)=>({id:'placed-'+i,deck_id:'deck-nkl',site:'NKL',
+       card_key:'Factory:CHP-4:'+(i+10),title:'Existing Card '+i,role:'CMT',chp_code:'CHP-4',
+       position:i+1,placed_by_member_id:'p6',cash_cost:10000})),
      round_results:[],server_now:new Date().toISOString()};
    await page.evaluate(data=>{
     window.__qaState=data;
@@ -88,7 +88,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
    assert.ok(stability.overflow<=3,'Horizontal overflow '+width+': '+JSON.stringify(stability));
    await page.evaluate(async()=>{
     const source=document.querySelector('[data-card="Factory:CHP-4:3"]');
-    const target=document.querySelector('.placed-card');
+    const target=document.querySelector('.placed-card:last-child');
     const transfer=new DataTransfer();
     source.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:transfer}));
     await refresh();
@@ -98,7 +98,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
     source.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:transfer}));
    });
    await page.waitForFunction(()=>window.__qaCalls.some(c=>c.name==='bcp_web_play_action_direct'),{timeout:5000});
-   await page.waitForFunction(()=>document.querySelectorAll('.placed-card').length===2,{timeout:5000});
+   await page.waitForFunction(()=>document.querySelectorAll('.placed-card').length===10,{timeout:5000});
    const calls=await page.evaluate(()=>window.__qaCalls.filter(c=>c.name==='bcp_web_play_action_direct'));
    assert.equal(calls.length,1,'Must place exactly one card at '+width);
    assert.equal(calls[0].args.p_site,'NKL','Wrong destination');
