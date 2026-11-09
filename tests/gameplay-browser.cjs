@@ -106,6 +106,7 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
     selectedChp=null;
     await refresh();
    });
+   await page.getByText('Admin เข้าสู่ Simulation แล้ว').waitFor({timeout:5000});
    assert.ok(await page.locator('.admin-member').count(),'Admin not in live roster '+width);
    assert.ok(await page.getByText('Admin เข้าสู่ Simulation แล้ว').count(),'Admin spectator view missing '+width);
    assert.deepEqual(errors,[],width+'px browser script errors');
