@@ -109,6 +109,14 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
     selectedChp=null;
     await refresh();
    });
+   await page.waitForTimeout(250);
+   const adminDiag=await page.evaluate(()=>({
+    role:state?.me?.role_key,isAdmin:state?.me?.is_admin,
+    sessionToken:session?.token,refreshBusy:busy,queued:queuedRefresh,
+    renderedGameKey,handText:document.querySelector('.hand')?.textContent?.slice(0,260),
+    roster:document.querySelector('.admin-member')?.textContent?.slice(0,100)
+   }));
+   console.log('ADMIN DIAG '+width+': '+JSON.stringify(adminDiag));
    await page.getByText('Admin เข้าสู่ Simulation แล้ว').waitFor({timeout:5000});
    assert.ok(await page.locator('.admin-member').count(),'Admin not in live roster '+width);
    assert.ok(await page.getByText('Admin เข้าสู่ Simulation แล้ว').count(),'Admin spectator view missing '+width);
