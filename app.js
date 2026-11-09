@@ -871,17 +871,20 @@ async function adminForceRound(btn,finishGame){
   });
 }
 async function toggleReady(btn){
-  return withButtonBusy(btn,state.me.ready_to_lock?'กำลังยกเลิก…':'กำลัง Ready…',async()=>{
+  const wantsReady=!state.me.ready_to_lock;
+  return withButtonBusy(btn,wantsReady?'กำลัง Ready…':'กำลังยกเลิก…',async()=>{
     try{
-      await rpc('bcp_web_set_ready',{p_room_id:state.room.id,p_session_token:session.token,p_ready:!state.me.ready_to_lock});
-      await refresh();
-      const players=state.members.filter(m=>m.role_key);
-      if(players.length===7&&players.every(m=>m.ready_to_lock)){
-        try{
-          await rpc('bcp_web_lock_round',{p_room_id:state.room.id,p_session_token:session.token});
-          await refresh();
-        }catch{}
+      const result=await rpc('bcp_web_set_ready',{
+        p_room_id:state.room.id,p_session_token:session.token,p_ready:wantsReady
+      });
+      if(result?.round_locked){
+        toast('Ready ครบ 7 Role · ระบบจบรอบให้แล้ว','success');
+      }else if(result?.waiting_for_twist){
+        toast('Ready ครบ 7 Role แต่ยังมี CRISIS UPDATE · ต้องเปิด Twist และยืนยัน Ready ใหม่','warning');
       }
+      // Atomic Ready locking occurs inside the database transaction. Never
+      // send a second client lock against a round that may have advanced.
+      await refresh();
     }catch(e){toast(errText(e),'error');}
   });
 }
