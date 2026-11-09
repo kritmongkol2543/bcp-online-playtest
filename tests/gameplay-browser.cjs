@@ -31,6 +31,9 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
         position:window.__qaState.placements.length+1,placed_by_member_id:'p6',cash_cost:card.cash_cost});
        window.__qaState.room.cash_reserved+=card.cash_cost;
        window.__qaState.room.cash_available-=card.cash_cost;
+       window.__qaState.me.ready_to_lock=false;
+       const player=window.__qaState.members.find(m=>m.id==='p6');
+       if(player)player.ready_to_lock=false;
        return {data:{ok:true},error:null};
       }
       if(name==='bcp_web_set_ready'){
@@ -86,6 +89,8 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
    assert.ok(stability.sameDeck&&stability.sameTimeline,'Realtime replaced an unchanged workspace '+width);
    assert.ok(stability.drift<=3,'Realtime jumped page scroll '+width+': '+JSON.stringify(stability));
    assert.ok(stability.overflow<=3,'Horizontal overflow '+width+': '+JSON.stringify(stability));
+   await page.locator('#readyBtn').click();
+   await page.waitForFunction(()=>document.querySelector('#readyBtn')?.textContent.includes('UNDO'),undefined,{timeout:4000});
    await page.evaluate(async()=>{
     const source=document.querySelector('[data-card="Factory:CHP-4:3"]');
     const target=document.querySelector('.placed-card:last-child');
@@ -98,7 +103,9 @@ const server=http.createServer((_req,res)=>{res.writeHead(200,{'content-type':'t
     source.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:transfer}));
    });
    await page.waitForFunction(()=>window.__qaCalls.some(c=>c.name==='bcp_web_play_action_direct'),{timeout:5000});
-   await page.waitForFunction(()=>document.querySelectorAll('.placed-card').length===10,{timeout:5000});
+   await page.waitForFunction(()=>document.querySelectorAll('.placed-card').length===10,undefined,{timeout:5000});
+   await page.waitForFunction(()=>!document.querySelector('#readyBtn')?.textContent.includes('UNDO'),undefined,{timeout:4000});
+   assert.ok((await page.locator('#toast-root').textContent()).includes('ระบบยกเลิก Ready'),'Team edit must explain Ready reset at '+width);
    const calls=await page.evaluate(()=>window.__qaCalls.filter(c=>c.name==='bcp_web_play_action_direct'));
    assert.equal(calls.length,1,'Must place exactly one card at '+width);
    assert.equal(calls[0].args.p_site,'NKL','Wrong destination');
