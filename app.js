@@ -243,7 +243,10 @@ async function refresh(first=false){
       selectedCard=null;
     }
     setConnectionState('online');
-    if(!(previousState?.room?.status==='playing'&&state?.room?.status==='playing'&&
+    const viewMatches=state?.room?.status==='playing'&&
+      renderedGameKey===[state.room.id,state.room.current_round,state.me?.role_key,
+        hasAdminControl(),!!state.room.paused_at,(state.round_results||[]).length].join('|');
+    if(!(viewMatches&&previousState?.room?.status==='playing'&&
       previousState.room.id===state.room.id&&
       gameplayFingerprint(previousState)===gameplayFingerprint(state))){
       render();
