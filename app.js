@@ -207,6 +207,16 @@ async function joinRoom(btn){
   });
 }
 
+function gameplayFingerprint(data){
+  if(!data?.room)return '';
+  // Ignore heartbeat-only timestamps and signal revisions: they do not change
+  // any visible game decision or control, and should never rebuild the UI.
+  return JSON.stringify({
+    ...data,server_now:null,
+    room:{...data.room,revision:null},
+    members:(data.members||[]).map(m=>({...m,last_seen_at:null}))
+  });
+}
 async function refresh(first=false){
   if(!session)return;
   if(busy){queuedRefresh=true;queuedFirstRefresh=queuedFirstRefresh||first;return;}
@@ -233,7 +243,11 @@ async function refresh(first=false){
       selectedCard=null;
     }
     setConnectionState('online');
-    render();
+    if(!(previousState?.room?.status==='playing'&&state?.room?.status==='playing'&&
+      previousState.room.id===state.room.id&&
+      gameplayFingerprint(previousState)===gameplayFingerprint(state))){
+      render();
+    }
     if(first) startRealtime();
   }catch(e){
     setConnectionState(navigator.onLine?'degraded':'offline');
