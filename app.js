@@ -469,7 +469,8 @@ function handHtml(){
   const role=state.me.role_key;
 
   if(!role){
-    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">ADMIN CONSOLE</span><h2>NO PLAYER DECK</h2><p>Admin Console ใช้ควบคุมห้อง เลือก TEST VIEW เพื่อทดลองในมุมของแต่ละ Role</p></div></div><div class="hand-empty-state"><span>ADMIN</span><b>เลือก Role ใน TEST VIEW เพื่อเริ่มทดลอง</b></div></section>';
+    const solo=!!session?.soloSessions?.length;
+    return '<section class="panel hand hand-locked"><div class="panel-head"><div><span class="eyebrow">ADMIN / FACILITATOR</span><h2>Live Game Control</h2><p>Admin เป็นคนที่ 8 อยู่ในเกมเพื่อควบคุมสถานการณ์ ไม่ถูกนับเป็น 7 Player Roles และไม่ต้องกด Ready</p></div></div><div class="hand-empty-state"><span>ADMIN ONLINE</span><b>Admin เข้าสู่ Simulation แล้ว</b><small>'+(solo?'สลับ TEST VIEW เพื่อทดสอบ Action ของแต่ละ Role':'ผู้เล่น 7 Role ใช้การ์ดของตนเอง · Admin ใช้แผงควบคุมด้านข้างหรือ Central Display')+'</small></div></section>';
   }
 
   const chps=ownedChps();
@@ -510,6 +511,8 @@ function handHtml(){
 
 function teamHtml(){
   const members=state.members.filter(m=>m.role_key);
+  const facilitator=state.members.find(m=>m.is_admin&&!m.role_key&&!m.is_bot);
+  const facilitatorLabel=facilitator?'<div class="member admin-member"><span class="presence '+(facilitator.online?'online':'offline')+'"></span><div><b>ADMIN / FACILITATOR</b><small>'+esc(facilitator.display_name)+' · คนที่ 8 · ไม่ต้อง Ready</small></div><span class="ready-text">'+(facilitator.online?'ONLINE':'OFFLINE')+'</span></div>':'';
   const waiting=state.members.filter(m=>!m.role_key&&!m.is_bot);
   const admin=hasAdminControl();
   const currentAdmin=state.members.find(m=>m.is_admin&&!m.is_bot);
@@ -523,8 +526,8 @@ function teamHtml(){
     '<button id="closeRoomBtn" class="btn small danger-btn">CLOSE ROOM</button></div>'+
     (waiting.length?'<div class="recovery-box"><small>ROLE RECOVERY</small><select id="recoveryMember" class="select">'+waiting.map(m=>'<option value="'+m.id+'">'+esc(m.display_name)+'</option>').join('')+'</select><select id="recoveryRole" class="select">'+ROLES.map(r=>'<option value="'+r+'">'+esc(ROLE_LABEL[r])+'</option>').join('')+'</select><button id="recoverRoleBtn" class="btn small">REASSIGN ROLE</button></div>':'')+
     '</div>':canClaimAdmin?'<div class="admin-panel"><b>ADMIN RECOVERY</b><p class="muted small-text">'+(offlineAdmin?'หาก Admin เดิม Offline เกิน 90 วินาที ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้':'ห้องนี้ไม่มี Admin ที่ใช้งานอยู่ ผู้เล่นที่ Online สามารถรับสิทธิ์ควบคุมห้องแทนได้')+'</p><button id="claimAdminBtn" class="btn full">TAKE ADMIN CONTROL</button></div>':'';
-  const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ READY · UNDO':'READY TO LOCK')+'</button><p class="muted small-text">ระบบจะ Lock รอบเมื่อ Ready ครบ 7 Role หรือเมื่อหมดเวลา</p>':'<div class="admin-console-note"><b>Admin Console</b><span>Admin ไม่ถูกนับเป็นผู้เล่นทั้ง 7 Role และไม่ต้องกด Ready</span></div>';
-  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+adminOverride+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
+  const readyControl=state.me.role_key?'<button id="readyBtn" class="btn '+(state.me.ready_to_lock?'success':'primary')+' full" '+(state.room.paused_at?'disabled':'')+'>'+(state.me.ready_to_lock?'✓ READY · UNDO':'READY TO LOCK')+'</button><p class="muted small-text">ระบบจะจบรอบเมื่อ Ready ครบ 7 Role และเปิด Twist ที่จำเป็นแล้ว · ถ้ามี Action/Twist เปลี่ยนระบบจะ Reset Ready ของทีม</p>':'<div class="admin-console-note"><b>Admin Console</b><span>Admin ไม่ถูกนับเป็นผู้เล่นทั้ง 7 Role และไม่ต้องกด Ready</span></div>';
+  return '<aside class="panel team-panel"><div class="panel-head"><div><h3>TEAM STATUS</h3><p>'+esc(ROLE_LABEL[state.me.role_key]||(admin?'Admin Console':''))+'</p></div></div>'+readyControl+adminOverride+'<div class="team-divider"><span>TEAM MEMBERS</span><span>'+members.filter(m=>m.ready_to_lock).length+'/7 READY</span></div><div class="member-list">'+facilitatorLabel+members.map(m=>'<div class="member"><span class="presence '+(m.is_bot?'bot':m.online?'online':'offline')+(m.ready_to_lock?' ready':'')+'"></span><div><b>'+esc(ROLE_LABEL[m.role_key])+'</b><small>'+esc(m.display_name)+(m.is_bot?' · TEST ROLE':'')+'</small></div><span class="ready-text">'+(m.ready_to_lock?'READY':m.is_bot?'TEST':m.online?'ONLINE':'OFFLINE')+'</span></div>').join('')+'</div>'+adminPanel+'</aside>';
 }
 function finishActionDrag(){
   draggingAction=false;
