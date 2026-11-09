@@ -105,7 +105,7 @@ function validTargetSites(card,role=state?.me?.role_key){
 }
 function adminToken(){ return session?.adminToken||session?.token; }
 function hasAdminControl(){ return !!(state?.me?.is_admin||session?.adminToken); }
-function roleSite(role=''){ return role.endsWith('_HO')?'HO':role.endsWith('_PPD')?'PPD':role.endsWith('_NKL')?'NKL':null; }
+function roleSite(role=''){ const key=String(role||'');return key.endsWith('_HO')?'HO':key.endsWith('_PPD')?'PPD':key.endsWith('_NKL')?'NKL':null; }
 function toast(msg,type=''){ const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg; $('#toast-root').append(el); setTimeout(()=>el.remove(),3600); }
 function errText(e){
   return (e?.message||String(e||'Error'))
