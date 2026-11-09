@@ -2461,3 +2461,11 @@ body{
 @media(prefers-reduced-motion:reduce){
   .play-timeline-col .site-dropzone{transition:none}
 }
+
+
+/* The fixed mobile Ready control must sit above cards and sticky workspaces.
+   team-panel isolation previously trapped z-index:95 below the Deck library. */
+@media(max-width:767px){
+  .team-panel{position:relative;z-index:120;isolation:auto}
+  #readyBtn{z-index:200}
+}
